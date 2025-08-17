@@ -9,13 +9,14 @@ spec:
       app: go-workers
   template:
     spec:
+      replicas: 2
       containers:
         - name: go-workers
           image: anthonycorletti/krm-examples-go-workers:latest
           resources:
             requests:
-              cpu: "200m"
-              memory: "256Mi"
+              memory: "128Mi"
+              cpu: "100m"
             limits:
-              cpu: "400m"
-              memory: "512Mi"
+              memory: "256Mi"
+              cpu: "300m"
