@@ -1,0 +1,3 @@
+#!/bin/sh -e
+
+gcloud container clusters get-credentials krm-examples --location us-central1

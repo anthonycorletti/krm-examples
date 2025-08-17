@@ -1,0 +1,24 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: go-workers
+build:
+  artifacts:
+    - image: anthonycorletti/krm-examples-go-workers
+      docker:
+        dockerfile: Dockerfile
+manifests:
+  kustomize:
+    paths:
+      - k8s/base
+profiles:
+  - name: preview
+    manifests:
+      kustomize:
+        paths:
+          - k8s/profiles/preview
+  - name: production
+    manifests:
+      kustomize:
+        paths:
+          - k8s/profiles/production

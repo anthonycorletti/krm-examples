@@ -1,0 +1,3 @@
+#!/bin/sh -e
+
+docker build -t anthonycorletti/krm-examples-go-workers:latest .

@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+TAG=latest
+PROFILE=preview
+skaffold deploy --build-artifacts=skaffold-output/skaffold-build-$TAG.json --profile=$PROFILE

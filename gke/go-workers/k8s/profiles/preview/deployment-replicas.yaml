@@ -1,0 +1,14 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-workers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-workers
+  template:
+    metadata:
+      labels:
+        app: go-workers
