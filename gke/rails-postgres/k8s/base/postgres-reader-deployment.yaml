@@ -1,0 +1,98 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-reader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-reader
+      role: reader
+  template:
+    metadata:
+      labels:
+        app: postgres-reader
+        role: reader
+    spec:
+      initContainers:
+        - name: setup-replica
+          image: postgres:17.6
+          env:
+            - name: PGPASSWORD
+              value: "replicator_password"
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          command:
+            - bash
+            - -c
+            - |
+              set -e
+              echo "Waiting for primary database..."
+              while ! pg_isready -h postgres-writer -p 5432 -U postgres; do
+                echo "Primary not ready, waiting..."
+                sleep 5
+              done
+
+              echo "Cleaning data directory..."
+              rm -rf $PGDATA/*
+
+              echo "Creating base backup with -R flag (auto-configures replication)..."
+              pg_basebackup -h postgres-writer -D $PGDATA -U replicator -W -R --checkpoint=fast
+
+              echo "Verifying standby.signal exists..."
+              if [ ! -f "$PGDATA/standby.signal" ]; then
+                echo "Creating standby.signal..."
+                touch "$PGDATA/standby.signal"
+              fi
+
+              echo "Replica setup complete"
+              ls -la $PGDATA/
+          volumeMounts:
+            - name: postgres-reader-storage
+              mountPath: /var/lib/postgresql/data
+      containers:
+        - name: postgres
+          image: postgres:17.6
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "password"
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+            - name: POSTGRES_MASTER_SERVICE
+              value: "postgres-writer"
+            - name: POSTGRES_SLAVE_MODE
+              value: "true"
+          volumeMounts:
+            - name: postgres-reader-storage
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - |
+                  pg_isready -U postgres &&
+                  psql -U postgres -c "SELECT pg_is_in_recovery();" | grep -q "t"
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: postgres-reader-storage
+          persistentVolumeClaim:
+            claimName: postgres-reader-pvc

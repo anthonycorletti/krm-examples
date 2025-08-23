@@ -1,0 +1,14 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - secrets.yaml
+  - postgres-writer-deployment.yaml
+  - postgres-reader-deployment.yaml
+  - postgres-writer-service.yaml
+  - postgres-reader-service.yaml
+  - postgres-writer-pvc.yaml
+  - postgres-reader-pvc.yaml
+  - postgres-init-configmap.yaml

@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-writer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-writer
+      role: writer
+  template:
+    metadata:
+      labels:
+        app: postgres-writer
+        role: writer
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17.6
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "app_production"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "password"
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          volumeMounts:
+            - name: postgres-writer-storage
+              mountPath: /var/lib/postgresql/data
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d/
+          command:
+            - docker-entrypoint.sh
+            - postgres
+            - -c
+            - wal_level=replica
+            - -c
+            - max_wal_senders=3
+            - -c
+            - wal_keep_size=1GB
+            - -c
+            - hot_standby=on
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: postgres-writer-storage
+          persistentVolumeClaim:
+            claimName: postgres-writer-pvc
+        - name: init-script
+          configMap:
+            name: postgres-init-config
+            defaultMode: 0755

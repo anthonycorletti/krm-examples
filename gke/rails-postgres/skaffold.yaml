@@ -1,0 +1,21 @@
+---
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: rails-app
+build:
+  artifacts:
+    - image: anthonycorletti/krm-examples-rails-postgres
+      context: app/
+      docker:
+        dockerfile: Dockerfile
+manifests:
+  kustomize:
+    paths:
+      - k8s/base
+profiles:
+  - name: production
+    manifests:
+      kustomize:
+        paths:
+          - k8s/profiles/production

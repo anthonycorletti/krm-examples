@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-config
+data:
+  01-setup-replication.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "Setting up replication user..."
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+        CREATE USER replicator REPLICATION LOGIN PASSWORD 'replicator_password';
+    EOSQL
+
+    echo "Updating pg_hba.conf for replication..."
+    echo "host replication replicator 0.0.0.0/0 md5" >> "$PGDATA/pg_hba.conf"
+
+    # Reload configuration
+    pg_ctl reload -D "$PGDATA"
+
+    echo "Replication setup complete"

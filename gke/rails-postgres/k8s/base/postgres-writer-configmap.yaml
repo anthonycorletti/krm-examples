@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-writer-config
+data:
+  postgresql.conf: |
+    # Basic PostgreSQL Writer Configuration
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 100
+    shared_buffers = 128MB
+
+    # Enable WAL archiving for replication
+    wal_level = replica
+    max_wal_senders = 3
+    wal_keep_size = 1GB
+
+    # Allow hot standby
+    hot_standby = on
+
+    # Basic logging
+    log_destination = 'stderr'
+    logging_collector = off
+
+  pg_hba.conf: |
+    # TYPE  DATABASE        USER            ADDRESS                 METHOD
+    # Allow local connections
+    local   all             all                                     trust
+    host    all             all             127.0.0.1/32            trust
+    host    all             all             ::1/128                 trust
+
+    # Allow connections from any host (for Kubernetes pods)
+    host    all             all             0.0.0.0/0               md5
+
+    # Allow replication connections
+    host    replication     replicator      0.0.0.0/0               md5
+
+  init-replication.sql: |
+    -- Create replication user
+    CREATE USER replicator REPLICATION LOGIN PASSWORD 'replicator_password';

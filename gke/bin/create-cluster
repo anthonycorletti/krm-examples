@@ -1,3 +1,10 @@
 #!/bin/sh -e
 
-gcloud container clusters get-credentials krm-examples --location us-central1
+gcloud beta container clusters create-auto "krm-examples" \
+--region "us-central1" \
+--release-channel "regular" \
+--tier "standard" \
+--enable-ip-access \
+--no-enable-google-cloud-access \
+--cluster-ipv4-cidr "/17" \
+--binauthz-evaluation-mode=DISABLED

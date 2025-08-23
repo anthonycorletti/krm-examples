@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-reader-config
+data:
+  postgresql.conf: |
+    # Basic PostgreSQL Reader Configuration
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 100
+    shared_buffers = 128MB
+
+    # Read replica settings
+    hot_standby = on
+    hot_standby_feedback = on
+
+    # Basic logging
+    log_destination = 'stderr'
+    logging_collector = off
