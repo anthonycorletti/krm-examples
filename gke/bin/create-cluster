@@ -7,4 +7,5 @@ gcloud beta container clusters create-auto "krm-examples" \
 --enable-ip-access \
 --no-enable-google-cloud-access \
 --cluster-ipv4-cidr "/17" \
---binauthz-evaluation-mode=DISABLED
+--binauthz-evaluation-mode=DISABLED \
+--quiet
