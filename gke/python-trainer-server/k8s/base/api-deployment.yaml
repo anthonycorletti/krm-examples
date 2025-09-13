@@ -1,0 +1,27 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-controller
+  namespace: ai-models
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-controller
+  template:
+    metadata:
+      labels:
+        app: api-controller
+    spec:
+      serviceAccountName: api-controller-sa # Use the SA with permissions
+      nodeSelector:
+        node-type: default # Schedule on default nodes
+      containers:
+        - name: api
+          image: anthonycorletti/krm-examples-python-trainer-server
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_MODE
+              value: "api"

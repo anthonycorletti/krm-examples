@@ -1,0 +1,22 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: python-trainer-server
+build:
+  artifacts:
+    - image: anthonycorletti/krm-examples-python-trainer-server
+      context: . # context is the root of this example
+      docker:
+        dockerfile: Dockerfile
+manifests:
+  kustomize:
+    paths:
+      - k8s/overlays/dev
+deploy:
+  kubectl: {}
+portForward:
+  - resourceType: service
+    resourceName: api-controller
+    namespace: ai-models
+    port: 8080
+    localPort: 9000

@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+mkdir -p ./skaffold-output
+TAG=latest
+PLATFORM="linux/amd64"
+skaffold build --tag=$TAG --platform=$PLATFORM --cache-artifacts=false --file-output=skaffold-output/skaffold-build-$TAG.json

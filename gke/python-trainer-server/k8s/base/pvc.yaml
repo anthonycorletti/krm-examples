@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-pvc
+  namespace: ai-models
+spec:
+  accessModes:
+    - ReadWriteOnce # suitable for example but not production, gke filestore supports ReadWriteMany and is better for production use cases
+  resources:
+    requests:
+      storage: 5Gi
