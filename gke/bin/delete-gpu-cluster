@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-REGION="us-east4"
+REGION="us-east1"
 
 gcloud beta container clusters delete "krm-examples-trainer-server" \
 --region "${REGION}" \
