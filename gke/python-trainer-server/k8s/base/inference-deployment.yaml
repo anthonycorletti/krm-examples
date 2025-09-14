@@ -1,11 +1,13 @@
+# k8s/base/inference-deployment.yaml
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: inference-server
-  namespace: ai-models
+  namespace: trainer-server
 spec:
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: inference-server
@@ -15,15 +17,11 @@ spec:
         app: inference-server
     spec:
       nodeSelector:
-        cloud.google.com/gke-accelerator: nvidia-l4 # Schedule on L4 nodes
-      volumes:
-        - name: model-storage
-          persistentVolumeClaim:
-            claimName: model-pvc
+        node-type: inference
       containers:
         - name: inference
-          image: anthonycorletti/krm-examples-fastapi-gpu # Placeholder
-          command: ["python", "main.py"]
+          imagePullPolicy: Always
+          image: anthonycorletti/krm-examples-python-trainer-server:latest
           env:
             - name: APP_MODE
               value: "infer"
@@ -31,7 +29,8 @@ spec:
             - containerPort: 8000
           resources:
             limits:
-              nvidia.com/gpu: 1 # Request 1 GPU from the node
-          volumeMounts:
-            - name: model-storage
-              mountPath: /models
+              nvidia.com/gpu: 1
+            requests:
+              nvidia.com/gpu: 1
+              memory: "2Gi"
+              cpu: "1"

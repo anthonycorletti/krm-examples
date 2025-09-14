@@ -1,0 +1,90 @@
+# k8s/base/file-server.yaml
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-storage-pvc
+  namespace: trainer-server
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-server
+  namespace: trainer-server
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: file-server
+  template:
+    metadata:
+      labels:
+        app: file-server
+    spec:
+      nodeSelector:
+        node-type: default
+      containers:
+        - name: file-server
+          image: python:3.9-slim
+          command:
+            - python
+            - -c
+            - |
+              import http.server
+              import socketserver
+              import os
+              from urllib.parse import unquote
+
+              class FileHandler(http.server.SimpleHTTPRequestHandler):
+                  def __init__(self, *args, **kwargs):
+                      super().__init__(*args, directory="/shared", **kwargs)
+
+                  def do_PUT(self):
+                      """Handle file uploads"""
+                      path = self.translate_path(self.path)
+                      os.makedirs(os.path.dirname(path), exist_ok=True)
+                      with open(path, 'wb') as f:
+                          f.write(self.rfile.read(int(self.headers.get('Content-Length', 0))))
+                      self.send_response(200)
+                      self.end_headers()
+
+              with socketserver.TCPServer(("", 8080), FileHandler) as httpd:
+                  print("Serving at port 8080")
+                  httpd.serve_forever()
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /shared
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: model-storage-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: file-server
+  namespace: trainer-server
+spec:
+  selector:
+    app: file-server
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP

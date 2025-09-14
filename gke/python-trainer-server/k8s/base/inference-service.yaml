@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: inference-server
-  namespace: ai-models
+  namespace: trainer-server
 spec:
   selector:
     app: inference-server

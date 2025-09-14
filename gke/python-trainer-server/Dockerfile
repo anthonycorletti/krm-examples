@@ -1,9 +1,7 @@
 FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3-dev && \
+    apt-get install -y --no-install-recommends python3-dev build-essential python3-pip && \
     apt-get clean && \
     python3 -m pip install --upgrade pip && \
     apt clean && \
@@ -13,8 +11,8 @@ RUN apt-get update && \
 WORKDIR /app
 
 COPY requirements.txt .
-RUN uv --python 3.12 pip install --no-cache -r requirements.txt --system
+RUN python3 -m pip install --no-cache -r requirements.txt
 
 COPY ./app/ .
 
-CMD ["uv", "run", "main.py"]
+CMD ["python3", "main.py"]

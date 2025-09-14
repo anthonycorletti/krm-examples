@@ -11,12 +11,10 @@ build:
 manifests:
   kustomize:
     paths:
-      - k8s/overlays/dev
-deploy:
-  kubectl: {}
-portForward:
-  - resourceType: service
-    resourceName: api-controller
-    namespace: ai-models
-    port: 8080
-    localPort: 9000
+      - k8s/base
+profiles:
+  - name: dev
+    manifests:
+      kustomize:
+        paths:
+          - k8s/profiles/dev

@@ -4,7 +4,7 @@ kubernetes
 numpy
 portalocker
 python-dotenv
+requests
 torch==2.3.1
-torchtext==0.18.0
 torchvision==0.18.1
 uvicorn[standard]

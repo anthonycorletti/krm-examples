@@ -3,13 +3,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: api-controller-sa
-  namespace: ai-models
+  namespace: trainer-server
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: job-creator-role
-  namespace: ai-models
+  namespace: trainer-server
 rules:
   - apiGroups: ["batch"]
     resources: ["jobs"]
@@ -22,7 +22,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: job-creator-binding
-  namespace: ai-models
+  namespace: trainer-server
 subjects:
   - kind: ServiceAccount
     name: api-controller-sa

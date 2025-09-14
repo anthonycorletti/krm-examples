@@ -1,20 +1,20 @@
 #!/bin/sh -e
 
 CLUSTER_NAME="krm-examples-trainer-server"
-REGION="us-central1"
+REGION="us-east1"
 PROJECT_ID=$(gcloud config get-value project)
 
 # Create the cluster with a default CPU-only node pool
 gcloud beta container clusters create "${CLUSTER_NAME}" \
   --project "${PROJECT_ID}" \
   --region "${REGION}" \
+  --node-locations "${REGION}-c" \
   --release-channel "regular" \
   --machine-type "e2-standard-4" \
   --num-nodes "1" \
-  --node-locations "${REGION}-a,${REGION}-b" \
   --enable-ip-alias \
   --node-labels=node-type=default \
-  --quiet
+  --quiet || true # Ignore errors if the cluster already exists
 
 echo "✅ Default node pool created."
 
@@ -23,27 +23,29 @@ gcloud beta container node-pools create "inference-pool" \
   --project "${PROJECT_ID}" \
   --cluster "${CLUSTER_NAME}" \
   --region "${REGION}" \
+  --node-locations "${REGION}-c" \
   --machine-type "g2-standard-4" \
   --accelerator type=nvidia-l4,count=1 \
   --num-nodes "1" \
   --node-labels=node-type=inference \
-  --quiet
+  --quiet || true # Ignore errors if the node pool already exists
 
 echo "✅ Inference node pool (L4 GPUs) created."
 echo "Installing NVIDIA drivers for inference pool..."
 kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/master/nvidia-driver-installer/cos/daemonset-preloaded-latest.yaml
 
-# Add the Training Node Pool (NVIDIA A100)
+# Add the Training Node Pool (NVIDIA p100)
 gcloud beta container node-pools create "training-pool" \
   --project "${PROJECT_ID}" \
   --cluster "${CLUSTER_NAME}" \
   --region "${REGION}" \
-  --machine-type "a2-highgpu-1g" \
-  --accelerator type=nvidia-tesla-a100,count=1 \
+  --node-locations "${REGION}-c" \
+  --machine-type "n1-standard-8" \
+  --accelerator type=nvidia-tesla-p100,count=1 \
   --num-nodes "1" \
   --node-labels=node-type=training \
-  --quiet
+  --quiet || true # Ignore errors if the node pool already exists
 
-echo "✅ Training node pool (A100 GPUs) created."
+echo "✅ Training node pool (p100 GPUs) created."
 echo "You may need to wait a few minutes for the NVIDIA drivers to finish installing on all pools."
 echo "Cluster '${CLUSTER_NAME}' is ready."

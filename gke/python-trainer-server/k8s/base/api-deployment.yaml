@@ -3,9 +3,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-controller
-  namespace: ai-models
+  namespace: trainer-server
 spec:
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: api-controller
@@ -19,7 +20,8 @@ spec:
         node-type: default # Schedule on default nodes
       containers:
         - name: api
-          image: anthonycorletti/krm-examples-python-trainer-server
+          image: anthonycorletti/krm-examples-python-trainer-server:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
