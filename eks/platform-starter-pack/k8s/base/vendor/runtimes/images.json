@@ -8,5 +8,5 @@
   "opensearch": "opensearchproject/opensearch:3.8.0@sha256:bcc1797519726ceb6d651d4a3e60b7c30da91793914a8dfe75fd441d4f641509",
   "opentelemetry-collector-contrib": "otel/opentelemetry-collector-contrib:0.160.0@sha256:799dc6cf12c96192af37b5bdba804da8c10b3bc563b43cb90c3f3c58d9572ad6",
   "clickhouse-server": "clickhouse/clickhouse-server:26.3.32.14@sha256:456063a689194186633bb3db0862283068f4c2ee538852d3aaffa7eb66f1f841",
-  "server": "quay.io/debezium/server:3.4.2.Final@sha256:07c8e834d79ef3b799329071a00f5e5e3b772e3403fbe56513e2390fa1e8f489"
+  "keycloak": "quay.io/keycloak/keycloak:26.7.3@sha256:ff4257d0d64efbe99ed1ddfaf07765cc3c36dc7518bf8324d41961327f441c54"
 }

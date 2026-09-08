@@ -61,6 +61,27 @@ def secret(name: str, namespace: str, values: dict[str, str], *, encoded: bool =
 
 
 def bootstrap_secrets() -> None:
+    if get("secret", "keycloak-db", "platform-cluster") is None:
+        apply_object(
+            {
+                "apiVersion": "v1",
+                "kind": "Secret",
+                "metadata": {"name": "keycloak-db", "namespace": "platform-cluster"},
+                "type": "kubernetes.io/basic-auth",
+                "stringData": {"username": "keycloak", "password": secrets.token_urlsafe(36)},
+            },
+            sensitive=True,
+        )
+    if get("secret", "keycloak-users", "platform-cluster") is None:
+        secret(
+            "keycloak-users",
+            "platform-cluster",
+            {
+                "KC_BOOTSTRAP_ADMIN_PASSWORD": secrets.token_urlsafe(36),
+                "KEYCLOAK_DEVELOPER_PASSWORD": secrets.token_urlsafe(24),
+                "KEYCLOAK_VIEWER_PASSWORD": secrets.token_urlsafe(24),
+            },
+        )
     if get("secret", "platform-services", "platform-cluster") is None:
         access, password = secrets.token_hex(16), secrets.token_urlsafe(36)
         secret(
@@ -84,8 +105,6 @@ def bootstrap_secrets() -> None:
                 ),
             },
         )
-    if get("secret", "platform-auth", "platform-apps") is None:
-        secret("platform-auth", "platform-apps", {"APP_TOKEN_SECRET": secrets.token_urlsafe(48)})
     services = get("secret", "platform-services", "platform-cluster")
     if services is None:
         raise RuntimeError("Platform service credentials are missing")
@@ -94,6 +113,7 @@ def bootstrap_secrets() -> None:
         "platform-storage",
         "platform-apps",
         {
+            "APP_CLICKHOUSE_PASSWORD": values["clickhouse-password"],
             "APP_OBJECT_ACCESS_KEY": values["s3-access-key"],
             "APP_OBJECT_SECRET_KEY": values["s3-secret-key"],
             "APP_VALKEY_URL": f"redis://:{values['valkey-password']}@valkey.platform-cluster.svc.cluster.local:6379/0",
@@ -101,6 +121,7 @@ def bootstrap_secrets() -> None:
     )
     command(str(ROOT / "bin/certs"))
     cert = ROOT / ".local/tls"
+    secret("platform-oidc-ca", "platform-apps", {"ca.crt": (cert / "ca.crt").read_text()})
     apply_object(
         {
             "apiVersion": "v1",
@@ -190,6 +211,16 @@ def up() -> None:
         secret(name, "platform-apps", source["data"], encoded=True)
     apply("k8s/profiles/local/routing")
     apply("k8s/profiles/local/apps")
+    api = get("deployment", "platform-api", "platform-apps")
+    if api and api.get("spec", {}).get("replicas") == 0:
+        kube(
+            "-n",
+            "platform-apps",
+            "scale",
+            "deployment/platform-api",
+            "--replicas=1",
+            "--field-manager=platform-local",
+        )
     old_job = get("job", "platform-migrate", "platform-apps")
     if old_job:
         if old_job.get("status", {}).get("active", 0):
@@ -212,9 +243,9 @@ def up() -> None:
             kube("-n", ns, "rollout", "restart", "deployment")
         kube("-n", ns, "rollout", "status", "deployment", "--timeout=600s")
         kube("-n", ns, "rollout", "status", "statefulset", "--timeout=600s")
-    print("Containers are ready. Run bin/local-forward, then bin/local-token to connect.")
+    print("Containers are ready. Run bin/local-forward, then bin/local-credentials to sign in.")
     print(
-        "Open the experimentation workspace with bin/local-forward and bin/local-token. "
+        "Open the experimentation workspace with bin/local-forward and bin/local-credentials. "
         "Run bin/local-experiment to exercise a task and follow-up through Argo."
     )
 
@@ -258,15 +289,15 @@ def status() -> None:
     kube("-n", "platform-apps", "get", "workflows")
 
 
-def workflow() -> None:
+def workflow(template="platform-inspect") -> None:
     result = subprocess.run(
         [*KUBECTL, "-n", "platform-apps", "create", "-f", "-", "-o", "json"],
         input=json.dumps(
             {
                 "apiVersion": "argoproj.io/v1alpha1",
                 "kind": "Workflow",
-                "metadata": {"generateName": "platform-inspect-"},
-                "spec": {"workflowTemplateRef": {"name": "platform-inspect"}},
+                "metadata": {"generateName": template + "-"},
+                "spec": {"workflowTemplateRef": {"name": template}},
             }
         ),
         text=True,
@@ -300,6 +331,18 @@ def workflow() -> None:
 
 
 def stop() -> None:
+    if get("cronworkflow", "platform-nightly-export", "platform-apps"):
+        kube(
+            "-n",
+            "platform-apps",
+            "patch",
+            "cronworkflow",
+            "platform-nightly-export",
+            "--type=merge",
+            "--field-manager=platform-local",
+            "-p",
+            '{"spec":{"suspend":true}}',
+        )
     active = json.loads(
         kube("-n", "platform-apps", "get", "workflows", "-o", "json", capture=True)
     )["items"]
@@ -328,7 +371,7 @@ def stop() -> None:
     )
     kube("-n", "platform-cluster", "scale", "statefulset", "--all", "--replicas=0")
     # Leave controllers running; Envoy's generated proxy is controller-managed.
-    for deployment in ("valkey", "jaeger", "otel-collector"):
+    for deployment in ("valkey", "jaeger", "otel-collector", "keycloak"):
         kube("-n", "platform-cluster", "scale", f"deployment/{deployment}", "--replicas=0")
     print(
         "Application and data services stopped; PVCs, secrets, and controllers retained. "
@@ -337,34 +380,53 @@ def stop() -> None:
 
 
 def token() -> None:
-    import time
+    import ssl
 
-    import jwt
+    import httpx
 
-    value = get("secret", "platform-auth", "platform-apps")
+    role = "viewer" if "--viewer" in sys.argv else "developer"
+    value = get("secret", "keycloak-users", "platform-cluster")
     if value is None:
         raise RuntimeError("Run bin/local-up first")
-    now = int(time.time())
-    print(
-        jwt.encode(
-            {
-                "sub": "local-developer",
-                "iss": "platform-local",
-                "aud": "platform-api",
-                "environment": "local",
-                "scope": "platform:read platform:verify",
-                "iat": now,
-                "exp": now + 3600,
-            },
-            base64.b64decode(value["data"]["APP_TOKEN_SECRET"]),
-            algorithm="HS256",
-        )
+    password = base64.b64decode(value["data"][f"KEYCLOAK_{role.upper()}_PASSWORD"]).decode()
+    context = ssl.create_default_context(cafile=str(ROOT / ".local/tls/ca.crt"))
+    context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    response = httpx.post(
+        "https://127.0.0.1:5173/realms/platform/protocol/openid-connect/token",
+        headers={"Host": "auth.localhost"},
+        verify=context,
+        data={
+            "grant_type": "password",
+            "client_id": "platform-mcp-cli" if "--mcp" in sys.argv else "platform-cli",
+            "username": role,
+            "password": password,
+            "scope": "openid platform:read platform:verify",
+        },
+        timeout=15,
     )
+    if response.status_code != 200:
+        raise RuntimeError(f"Local Keycloak sign-in failed (HTTP {response.status_code})")
+    print(response.json()["access_token"])
+
+
+def credentials() -> None:
+    value = get("secret", "keycloak-users", "platform-cluster")
+    if value is None:
+        raise RuntimeError("Run bin/local-up first")
+    print("Sign in at https://web.localhost:5173")
+    for role in ("developer", "viewer"):
+        password = base64.b64decode(value["data"][f"KEYCLOAK_{role.upper()}_PASSWORD"]).decode()
+        print(f"{role}: {password}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("up", "status", "forward", "token", "stop", "workflow"))
+    parser.add_argument(
+        "action",
+        choices=("up", "status", "forward", "token", "stop", "workflow", "credentials", "nightly"),
+    )
+    parser.add_argument("--viewer", action="store_true")
+    parser.add_argument("--mcp", action="store_true")
     args = parser.parse_args()
     try:
         {
@@ -372,8 +434,10 @@ if __name__ == "__main__":
             "status": status,
             "forward": forward,
             "token": token,
+            "credentials": credentials,
             "stop": stop,
             "workflow": workflow,
+            "nightly": lambda: workflow("platform-export-schedule"),
         }[args.action]()
     except (subprocess.CalledProcessError, RuntimeError) as exc:
         sys.exit(str(exc))

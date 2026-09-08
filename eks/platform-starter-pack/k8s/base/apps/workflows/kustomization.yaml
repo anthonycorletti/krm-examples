@@ -5,3 +5,6 @@ resources:
 - rbac.yaml
 - template.yaml
 - agent.yaml
+- export.yaml
+- export-schedule.yaml
+- nightly.yaml

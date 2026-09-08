@@ -34,6 +34,9 @@ import {
   listComponents,
   readIdentity,
   readArtifact,
+  listExports,
+  createExport,
+  readWarehouse,
 } from "../client/sdk.gen";
 import { hasToken } from "../session";
 import { disconnect } from "../oidc";
@@ -80,6 +83,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     agents: agents.data,
     components,
     system,
+    exports: system ? (await listExports(options)).data : [],
+    warehouse: system
+      ? await readWarehouse(options)
+          .then((r) => r.data)
+          .catch(() => null)
+      : null,
   };
 }
 
@@ -91,6 +100,13 @@ export async function action({ request }: ActionFunctionArgs) {
   const taskId = value("task");
   const opts = { throwOnError: true as const, signal: request.signal };
   try {
+    if (intent === "export") {
+      const result = await createExport({
+        ...opts,
+        body: { request_key: value("request_key") },
+      });
+      return { exportId: result.data.id, error: undefined };
+    }
     if (intent === "disconnect") {
       await disconnect();
       return redirect("/connect");
@@ -158,6 +174,8 @@ function Status({ value }: { value: string }) {
 }
 
 export default function Console() {
+  const exportData = useLoaderData<typeof loader>();
+  const [exportKey, setExportKey] = useState(() => String(Date.now()));
   const {
     identity,
     projects,
@@ -184,6 +202,9 @@ export default function Console() {
   const writable = identity.scopes.includes("platform:verify");
   const busy = mutation.state !== "idle";
   const live =
+    exportData.exports.some(
+      (e) => e.status === "queued" || e.status === "running",
+    ) ||
     tasks.some((t) => t.status === "queued" || t.status === "running") ||
     detail?.runs.some((r) => r.status === "queued" || r.status === "running");
   useEffect(() => {
@@ -344,6 +365,56 @@ export default function Console() {
                         : "No model provider configured; tasks unavailable."}
                   </span>
                   <Status value={a.available ? "available" : "unavailable"} />
+                </div>
+              ))}
+            </div>
+            <div className="panel-title">WAREHOUSE SNAPSHOTS</div>
+            <p>
+              Nightly at 02:00 UTC. Full metadata snapshots; conversation bodies
+              remain in object storage.
+            </p>
+            <div className="snapshot-actions">
+              <mutation.Form
+                method="post"
+                onSubmit={() => setExportKey(String(Date.now()))}
+              >
+                <input type="hidden" name="request_key" value={exportKey} />
+                <Button
+                  name="intent"
+                  value="export"
+                  disabled={!writable || busy}
+                >
+                  Export now
+                </Button>
+              </mutation.Form>
+              <p>
+                {exportData.warehouse?.export
+                  ? `Latest validated snapshot: ${time(exportData.warehouse.export.updated_at)}`
+                  : "No validated snapshot available yet."}
+              </p>
+            </div>
+            <div className="system-table">
+              {Object.entries(exportData.warehouse?.counts ?? {}).map(
+                ([entity, count]) => (
+                  <div key={entity}>
+                    <strong>{entity}</strong>
+                    <span>{count} rows in ClickHouse</span>
+                  </div>
+                ),
+              )}
+              {exportData.exports.map((e) => (
+                <div key={e.id} data-export-id={e.id}>
+                  <strong>
+                    {e.trigger} · {time(e.created_at)}
+                  </strong>
+                  <span>
+                    {e.id}
+                    <br />
+                    {e.workflow_name}
+                    <br />
+                    {e.error ?? (e.manifest_key || "Waiting for export")}
+                  </span>
+                  <Status value={e.status ?? "queued"} />
                 </div>
               ))}
             </div>

@@ -10,6 +10,12 @@ spec:
     initdb:
       database: platform
       owner: platform
+  managed:
+    roles:
+    - name: keycloak
+      login: true
+      passwordSecret:
+        name: keycloak-db
   storage:
     size: 10Gi
   resources:

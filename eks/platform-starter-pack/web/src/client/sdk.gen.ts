@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CancelTaskData, CancelTaskErrors, CancelTaskResponses, CreateProjectData, CreateProjectErrors, CreateProjectResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteProjectData, DeleteProjectErrors, DeleteProjectResponses, DeleteTaskData, DeleteTaskErrors, DeleteTaskResponses, ListAgentsData, ListAgentsResponses, ListComponentsData, ListComponentsErrors, ListComponentsResponses, ListProjectsData, ListProjectsResponses, ListTasksData, ListTasksErrors, ListTasksResponses, ListVerificationsData, ListVerificationsErrors, ListVerificationsResponses, ReadArtifactData, ReadArtifactErrors, ReadArtifactResponses, ReadAuthConfigData, ReadAuthConfigResponses, ReadIdentityData, ReadIdentityResponses, ReadLivenessData, ReadLivenessResponses, ReadMigrationsData, ReadMigrationsErrors, ReadMigrationsResponses, ReadReadinessData, ReadReadinessResponses, ReadTaskData, ReadTaskErrors, ReadTaskResponses, RunVerificationData, RunVerificationErrors, RunVerificationResponses, SendMessageData, SendMessageErrors, SendMessageResponses } from './types.gen';
+import type { CancelTaskData, CancelTaskErrors, CancelTaskResponses, CreateExportData, CreateExportErrors, CreateExportResponses, CreateProjectData, CreateProjectErrors, CreateProjectResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteProjectData, DeleteProjectErrors, DeleteProjectResponses, DeleteTaskData, DeleteTaskErrors, DeleteTaskResponses, ListAgentsData, ListAgentsResponses, ListComponentsData, ListComponentsErrors, ListComponentsResponses, ListExportsData, ListExportsResponses, ListProjectsData, ListProjectsResponses, ListTasksData, ListTasksErrors, ListTasksResponses, ListVerificationsData, ListVerificationsErrors, ListVerificationsResponses, ReadArtifactData, ReadArtifactErrors, ReadArtifactResponses, ReadAuthConfigData, ReadAuthConfigResponses, ReadExportManifestData, ReadExportManifestErrors, ReadExportManifestResponses, ReadIdentityData, ReadIdentityResponses, ReadLivenessData, ReadLivenessResponses, ReadMigrationsData, ReadMigrationsErrors, ReadMigrationsResponses, ReadReadinessData, ReadReadinessResponses, ReadTaskData, ReadTaskErrors, ReadTaskResponses, ReadWarehouseData, ReadWarehouseResponses, RunVerificationData, RunVerificationErrors, RunVerificationResponses, SendMessageData, SendMessageErrors, SendMessageResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -47,6 +47,46 @@ export const readIdentity = <ThrowOnError extends boolean = false>(options?: Opt
 export const listComponents = <ThrowOnError extends boolean = false>(options?: Options<ListComponentsData, ThrowOnError>) => (options?.client ?? client).get<ListComponentsResponses, ListComponentsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/components',
+    ...options
+});
+
+/**
+ * List Exports
+ */
+export const listExports = <ThrowOnError extends boolean = false>(options?: Options<ListExportsData, ThrowOnError>) => (options?.client ?? client).get<ListExportsResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/exports',
+    ...options
+});
+
+/**
+ * Create Export
+ */
+export const createExport = <ThrowOnError extends boolean = false>(options: Options<CreateExportData, ThrowOnError>) => (options.client ?? client).post<CreateExportResponses, CreateExportErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/exports',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Warehouse
+ */
+export const readWarehouse = <ThrowOnError extends boolean = false>(options?: Options<ReadWarehouseData, ThrowOnError>) => (options?.client ?? client).get<ReadWarehouseResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/exports/warehouse',
+    ...options
+});
+
+/**
+ * Manifest
+ */
+export const readExportManifest = <ThrowOnError extends boolean = false>(options: Options<ReadExportManifestData, ThrowOnError>) => (options.client ?? client).get<ReadExportManifestResponses, ReadExportManifestErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/exports/{export_id}/manifest',
     ...options
 });
 

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:26.7.3@sha256:ff4257d0d64efbe99ed1ddfaf07765cc3c36dc7518bf8324d41961327f441c54
+        args: [start, --import-realm]
+        env:
+        - {name: KC_DB, value: postgres}
+        - {name: KC_DB_URL, value: 'jdbc:postgresql://platform-postgres-rw.platform-cluster.svc.cluster.local:5432/keycloak?sslmode=verify-full&sslrootcert=/run/postgres/ca.crt'}
+        - {name: KC_DB_USERNAME, value: keycloak}
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: keycloak-db, key: password}
+        - {name: KC_HTTP_ENABLED, value: 'true'}
+        - {name: KC_PROXY_HEADERS, value: xforwarded}
+        - {name: KC_HOSTNAME, value: 'https://auth.localhost:5173'}
+        - {name: KC_HTTPS_CERTIFICATE_FILE, value: /run/tls/tls.crt}
+        - {name: KC_HTTPS_CERTIFICATE_KEY_FILE, value: /run/tls/tls.key}
+        - {name: KC_HEALTH_ENABLED, value: 'true'}
+        - {name: KC_METRICS_ENABLED, value: 'true'}
+        - {name: KC_HTTP_MANAGEMENT_SCHEME, value: http}
+        - {name: KC_BOOTSTRAP_ADMIN_USERNAME, value: admin}
+        - {name: APP_ENV, value: local}
+        - {name: JAVA_OPTS_KC_HEAP, value: '-Xms128m -Xmx384m'}
+        envFrom:
+        - secretRef: {name: keycloak-users}
+        ports:
+        - {name: http, containerPort: 8080}
+        - {name: https, containerPort: 8443}
+        - {name: management, containerPort: 9000}
+        resources:
+          requests: {cpu: 100m, memory: 512Mi}
+          limits: {memory: 1Gi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+        startupProbe:
+          httpGet: {path: /health/ready, port: management}
+          periodSeconds: 5
+          failureThreshold: 90
+        readinessProbe:
+          httpGet: {path: /health/ready, port: management}
+        livenessProbe:
+          httpGet: {path: /health/live, port: management}
+        volumeMounts:
+        - {name: realm, mountPath: /opt/keycloak/data/import, readOnly: true}
+        - {name: tls, mountPath: /run/tls, readOnly: true}
+        - {name: postgres-ca, mountPath: /run/postgres, readOnly: true}
+      volumes:
+      - name: realm
+        configMap: {name: keycloak-realm}
+      - name: tls
+        secret: {secretName: platform-local-tls}
+      - name: postgres-ca
+        secret: {secretName: platform-postgres-ca}

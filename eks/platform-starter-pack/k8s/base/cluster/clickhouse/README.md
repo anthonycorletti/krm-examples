@@ -1,5 +1,3 @@
-# clickhouse
+# ClickHouse warehouse
 
-Single-instance warehouse service. Readiness is probed by the System view. Postgres CDC has not yet been implemented or validated; a healthy ClickHouse pod is not evidence of replication.
-
-Runtime versions and image digests are recorded in [the vendor inventory](../../vendor/README.md). Apply through the selected profile; `bin/local-check` renders the Colima composition.
+Stores validated metadata snapshots exported through Argo and SeaweedFS Parquet objects. Each export has its own table; application queries select the newest completed snapshot belonging to the caller. Nightly exports run at 02:00 UTC, and Export now runs the same worker. CDC is deferred. See server/app/exports/README.md in the example for snapshot and retention limits.

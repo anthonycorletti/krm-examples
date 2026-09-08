@@ -32,7 +32,7 @@ class Workflows:
         response.raise_for_status()
         return response.json()
 
-    async def create(self, name, run_id):
+    async def create(self, name, run_id, template="platform-agent"):
         response = await self.request(
             "POST",
             json={
@@ -40,7 +40,7 @@ class Workflows:
                 "kind": "Workflow",
                 "metadata": {"name": name, "labels": {"app": "platform-worker"}},
                 "spec": {
-                    "workflowTemplateRef": {"name": "platform-agent"},
+                    "workflowTemplateRef": {"name": template},
                     "arguments": {
                         "parameters": [
                             {"name": "run-id", "value": run_id},

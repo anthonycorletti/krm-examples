@@ -10,6 +10,7 @@ data:
   APP_MCP_AUDIENCE: platform-mcp
   APP_POSTGRES_CA_FILE: /run/postgres/ca.crt
   APP_OBJECT_ENDPOINT: http://seaweedfs.platform-cluster.svc.cluster.local:8333
+  APP_CLICKHOUSE_URL: http://clickhouse.platform-cluster.svc.cluster.local:8123
   APP_OBJECT_BUCKET: platform
   APP_OTEL_ENDPOINT: http://otel-collector.platform-cluster.svc.cluster.local:4318
   APP_WORKER_IMAGE: platform-server:release

@@ -103,8 +103,8 @@ try {
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
     return result.result.value;
   };
-  const wait = async (expression: string) => {
-    for (let i = 0; i < 100; i++) {
+  const wait = async (expression: string, attempts = 100) => {
+    for (let i = 0; i < attempts; i++) {
       if (await evaluate(expression)) return;
       await Bun.sleep(150);
     }
@@ -124,18 +124,39 @@ try {
     mobile: false,
   });
   await send("Page.navigate", { url: "https://web.localhost:5173" });
-  await wait("!!document.querySelector('#token')");
-  console.log("Connect form loaded over HTTPS.");
-  const tokenProcess = Bun.spawn([`${root}/bin/local-token`], {
-    stdout: "pipe",
-    stderr: "inherit",
+  await wait(
+    "Array.from(document.querySelectorAll('button')).some(b => b.textContent.trim() === 'Sign in')",
+  );
+  await evaluate(
+    "Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Sign in').click()",
+  );
+  await wait("!!document.querySelector('#username')");
+  console.log("Keycloak sign-in form loaded.");
+  const credentials = Bun.spawn(
+    [
+      "kubectl",
+      "--context",
+      "colima",
+      "-n",
+      "platform-cluster",
+      "get",
+      "secret",
+      "keycloak-users",
+      "-o",
+      "jsonpath={.data.KEYCLOAK_DEVELOPER_PASSWORD}",
+    ],
+    { stdout: "pipe", stderr: "inherit" },
+  );
+  const encoded = await new Response(credentials.stdout).text();
+  if (await credentials.exited)
+    throw new Error("Could not read local demo credentials");
+  await evaluate("document.querySelector('#username').focus()");
+  await send("Input.insertText", { text: "developer" });
+  await evaluate("document.querySelector('#password').focus()");
+  await send("Input.insertText", {
+    text: Buffer.from(encoded, "base64").toString(),
   });
-  const token = (await new Response(tokenProcess.stdout).text()).trim();
-  if (await tokenProcess.exited)
-    throw new Error("Could not obtain local token");
-  await evaluate("document.querySelector('#token').focus()");
-  await send("Input.insertText", { text: token });
-  await evaluate("document.querySelector('#token').form.requestSubmit()");
+  await evaluate("document.querySelector('#password').form.requestSubmit()");
   await wait("!!document.querySelector('.sidebar')");
   const project = await evaluate(
     "Array.from(document.querySelectorAll('a')).find(a => a.textContent.includes('Platform walkthrough'))?.getAttribute('href')",
@@ -172,6 +193,18 @@ try {
       await screenshot(theme);
     }
   }
+  await evaluate(`document.querySelector('a[href="/?view=system"]').click()`);
+  await wait("!!document.querySelector('button[value=export]')");
+  const before = await evaluate(
+    "Array.from(document.querySelectorAll('[data-export-id]')).map(e => e.dataset.exportId)",
+  );
+  await evaluate("document.querySelector('button[value=export]').click()");
+  await wait(
+    `Array.from(document.querySelectorAll('[data-export-id]')).some(e => !${JSON.stringify(before)}.includes(e.dataset.exportId) && e.textContent.includes('completed'))`,
+    400,
+  );
+  await screenshot("warehouse");
+  console.log("Export now completed through the browser.");
   await send("Emulation.setDeviceMetricsOverride", {
     width: 390,
     height: 844,

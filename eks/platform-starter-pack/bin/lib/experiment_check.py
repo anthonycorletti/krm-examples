@@ -36,6 +36,101 @@ async def main():
             response.raise_for_status()
             return response.json()
 
+        if "--identity" in sys.argv:
+            await request("GET", "/api/projects")
+            process = await asyncio.create_subprocess_exec(
+                str(ROOT / "bin/local-token"), "--mcp", stdout=asyncio.subprocess.PIPE
+            )
+            mcp_token, _ = await process.communicate()
+            assert process.returncode == 0
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {},
+                    "clientInfo": {"name": "platform-check", "version": "1"},
+                },
+            }
+            async with httpx.AsyncClient(verify=context, timeout=45) as mcp:
+                headers = {
+                    "Host": "mcp.localhost",
+                    "Accept": "application/json, text/event-stream",
+                    "Authorization": "Bearer " + mcp_token.decode().strip(),
+                }
+                response = await mcp.post(
+                    "https://127.0.0.1:8001/mcp", headers=headers, json=payload
+                )
+                response.raise_for_status()
+                assert '"serverInfo"' in response.text
+                headers["Authorization"] = client.headers["Authorization"]
+                response = await mcp.post(
+                    "https://127.0.0.1:8001/mcp", headers=headers, json=payload
+                )
+                assert response.status_code == 401, "MCP accepted an API audience token"
+            response = await client.get(
+                "/api/projects", headers={"Authorization": "Bearer " + mcp_token.decode().strip()}
+            )
+            assert response.status_code == 401, "API accepted an MCP audience token"
+            records = await request("GET", "/api/exports")
+            nightly = next(
+                (r for r in records if r["trigger"] == "nightly" and r["status"] == "completed"),
+                None,
+            )
+            print(
+                json.dumps(
+                    {
+                        "api_oidc": True,
+                        "mcp_oidc": True,
+                        "audience_isolation": True,
+                        "completed_nightly_export": nightly["id"] if nightly else None,
+                    },
+                    indent=2,
+                )
+            )
+            return
+
+        if "--export" in sys.argv:
+            key = "local-check-" + str(__import__("time").time_ns())
+            record = await request("POST", "/api/exports", json={"request_key": key})
+            again = await request("POST", "/api/exports", json={"request_key": key})
+            assert record["id"] == again["id"], "Idempotent submission changed IDs"
+            for _ in range(180):
+                records = await request("GET", "/api/exports")
+                current = next(r for r in records if r["id"] == record["id"])
+                if current["status"] == "completed":
+                    break
+                if current["status"] == "failed":
+                    raise RuntimeError(f"Export failed: {current['workflow_name']}")
+                await asyncio.sleep(2)
+            else:
+                raise RuntimeError("Export timed out")
+            manifest = await request("GET", f"/api/exports/{record['id']}/manifest")
+            warehouse = await request("GET", "/api/exports/warehouse")
+            assert manifest["row_counts"] == warehouse["counts"]
+            assert warehouse["export"]["id"] == record["id"]
+            viewer_process = await asyncio.create_subprocess_exec(
+                str(ROOT / "bin/local-token"), "--viewer", stdout=asyncio.subprocess.PIPE
+            )
+            viewer, _ = await viewer_process.communicate()
+            assert viewer_process.returncode == 0
+            client.headers["Authorization"] = "Bearer " + viewer.decode().strip()
+            assert (await client.post("/api/exports", json={"request_key": key})).status_code == 403
+            assert (await client.get(f"/api/exports/{record['id']}/manifest")).status_code == 404
+            print(
+                json.dumps(
+                    {
+                        "export": record["id"],
+                        "workflow": current["workflow_name"],
+                        "counts": warehouse["counts"],
+                        "viewer_denied": True,
+                    },
+                    indent=2,
+                )
+            )
+            return
+
         if "--components" in sys.argv:
             components = await request("GET", "/api/components")
             print(json.dumps(components, indent=2))

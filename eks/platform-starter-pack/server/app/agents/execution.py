@@ -238,6 +238,9 @@ async def dispatch(engine, settings):
     while True:
         try:
             await dispatch_once(engine, settings)
+            from app.exports.execution import dispatch_exports
+
+            await dispatch_exports(engine, settings)
         except Exception:
             log.exception("Workflow reconciliation failed; queued work is retained")
         await asyncio.sleep(3)

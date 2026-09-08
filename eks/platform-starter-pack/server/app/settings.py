@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     mcp_audience: str = "platform-mcp"
     oidc_jwks_url: str = ""
     oidc_client_id: str = ""
+    oidc_ca_file: str = ""
+    clickhouse_url: str = ""
+    clickhouse_user: str = "platform"
+    clickhouse_password: SecretStr = SecretStr("")
     postgres_ca_file: str = ""
     object_endpoint: str = ""
     object_bucket: str = "platform"

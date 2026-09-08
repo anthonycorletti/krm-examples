@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import col, select
 
 from app.components.schemas import ComponentRead
+from app.exports.service import ExportsService
 from app.kit.cache import Cache
 from app.kit.db.postgres import transaction
 from app.kit.kubernetes import condition, get_resource
@@ -26,7 +27,7 @@ CATALOG = {
     "opensearch": "OpenSearch",
     "autoscaling": "Autoscaling",
     "clickhouse": "ClickHouse warehouse",
-    "cdc": "Postgres → ClickHouse CDC",
+    "exports": "Postgres → ClickHouse snapshots",
     "agents": "Pydantic AI workflows",
     "secrets": "Encrypted Kubernetes Secrets",
     "cloudnativepg": "CloudNativePG",
@@ -77,10 +78,12 @@ class ComponentsService:
             if settings.oidc_jwks_url
             else "Development tokens are active; no OIDC provider configured"
         )
-        components["cdc"].status = "not_implemented"
-        components[
-            "cdc"
-        ].detail = "Replication is not implemented; warehouse health does not prove CDC"
+        components["exports"].detail = "No validated metadata snapshot for your projects yet"
+        if self.auth.oidc_verified:
+            components["identity"].status = "ready"
+            components[
+                "identity"
+            ].detail = "Request authenticated using the configured OIDC issuer and JWKS"
         components["secrets"].detail = (
             "Runtime Secrets are used; control-plane encryption at rest is not attested. "
             "This application cannot verify datastore encryption by reading Secret objects."
@@ -127,6 +130,18 @@ class ComponentsService:
                 await cache.close()
             await self.agent_evidence(components, principal, environment)
             await self.metric_evidence(components)
+            try:
+                warehouse = await ExportsService(self.engine, self.auth).warehouse(principal)
+                if warehouse.export:
+                    components["exports"].status = "ready"
+                    components["exports"].detail = (
+                        f"Snapshot {warehouse.export.id}: {sum(warehouse.counts.values())} "
+                        "metadata rows queried in ClickHouse; "
+                        f"validated {warehouse.export.updated_at}"
+                    )
+            except Exception:
+                components["exports"].status = "unavailable"
+                components["exports"].detail = "Could not query the latest warehouse snapshot"
         return [postgres, *components.values()]
 
     async def kubernetes_probes(self, components, namespace):

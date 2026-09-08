@@ -3,3 +3,4 @@ kind: Kustomization
 namespace: platform-cluster
 resources:
 - gateway.yaml
+- identity.yaml

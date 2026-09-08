@@ -3,4 +3,4 @@ set -eu
 cd "$(dirname "$0")/.."
 ./bin/postgres-start
 export APP_TEST_DATABASE_URL=postgresql+asyncpg://platform:platform@127.0.0.1:55432/platform
-./bin/server-test tests/test_integration.py tests/test_experiments.py "$@"
+./bin/server-test tests/test_integration.py tests/test_experiments.py tests/test_exports.py "$@"

@@ -28,7 +28,7 @@ Bun.serve({
         "Cache-Control": path.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-cache",
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "same-origin",
-        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+        "Content-Security-Policy": `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ${process.env.APP_OIDC_ORIGIN ?? ""}; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
       },
     });
   },

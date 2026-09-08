@@ -12,7 +12,14 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
-HOSTS = ("web.localhost", "api.localhost", "mcp.localhost", "localhost")
+HOSTS = (
+    "web.localhost",
+    "api.localhost",
+    "mcp.localhost",
+    "auth.localhost",
+    "keycloak.platform-cluster.svc.cluster.local",
+    "localhost",
+)
 
 
 def write_file(path: Path, data: bytes, mode: int) -> None:

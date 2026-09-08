@@ -39,7 +39,12 @@ async def inspect_demo(settings: Settings) -> dict[str, str]:
 
 async def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("demo", "dispatch", "run"), default="demo", nargs="?")
+    parser.add_argument(
+        "action",
+        choices=("demo", "dispatch", "run", "export", "schedule-exports"),
+        default="demo",
+        nargs="?",
+    )
     parser.add_argument("run_id", nargs="?")
     args = parser.parse_args()
     settings = Settings()
@@ -52,6 +57,14 @@ async def main() -> None:
     try:
         if args.action == "dispatch":
             await dispatch(engine, settings)
+        elif args.run_id and args.action == "export":
+            from app.exports.execution import run_export
+
+            await run_export(engine, settings, args.run_id)
+        elif args.run_id and args.action == "schedule-exports":
+            from app.exports.execution import schedule_exports
+
+            await schedule_exports(engine, settings, args.run_id)
         elif args.run_id:
             await run_agent(engine, settings, args.run_id)
         else:

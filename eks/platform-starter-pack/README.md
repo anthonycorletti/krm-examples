@@ -18,12 +18,12 @@ Use the existing default Colima profile with Kubernetes enabled and the Docker r
 Keep forwarding running. In another terminal:
 
 ```sh
-./bin/local-token
+./bin/local-credentials
 ```
 
-Open https://web.localhost:5173 and connect with that token. API documentation is at https://api.localhost:8000/docs and MCP at https://mcp.localhost:8001/mcp. Stop native development servers occupying those ports first. If the local CA is not trusted yet, run `bin/certs-trust` once. No hosts-file changes are needed.
+Open https://web.localhost:5173, choose Sign in, and use the generated developer or viewer credentials. Keycloak is available at https://auth.localhost:5173. API documentation is at https://api.localhost:8000/docs and MCP at https://mcp.localhost:8001/mcp. Stop native development servers occupying those ports first. If the local CA is not trusted yet, run `bin/certs-trust` once. No hosts-file changes are needed.
 
-Create a project, start a task with **Platform inspector**, read its report, and send a follow-up. The run details show Argo workflow names, trace IDs, token usage, and short-lived progress. The System view probes the backing services and distinguishes implemented checks from planned integrations. Appearance supports System, Light, and Dark.
+Create a project, start a task with **Platform inspector**, read its report, and send a follow-up. The run details show Argo workflow names, trace IDs, token usage, and short-lived progress. The System view probes the backing services and distinguishes implemented checks from unverified integrations. Appearance supports System, Light, and Dark.
 
 `bin/local-experiment` performs the task/follow-up walkthrough against the running HTTPS API and leaves a project to inspect in the UI. `bin/local-status` shows workloads. `bin/local-stop` retains volumes and credentials; `bin/local-up` resumes them. See the [local profile](k8s/profiles/local/README.md) for capacity and operational limits.
 
@@ -38,6 +38,7 @@ server/
     worker.py                Dispatcher and Argo agent entrypoint
     auth/                    Shared authentication and authorization
     projects/                router.py, service.py, schemas.py
+    exports/                 Snapshot requests, lifecycle, and execution
     tasks/                   router.py, service.py, schemas.py
     agents/                  Pydantic AI execution
     models/                  SQLModel metadata tables
@@ -76,7 +77,7 @@ The inspector works without external credentials. Research and analysis agents b
 
 The local composition includes Envoy Gateway and Gateway API, cert-manager, CloudNativePG, Valkey, SeaweedFS, Argo Workflows, Prometheus, Alertmanager, Jaeger, Perses, OpenSearch, OpenTelemetry Collector, and ClickHouse. Application workloads use `platform-apps`; platform services and operators use `platform-cluster`. Kubernetes system namespaces remain separate.
 
-Application traces use OpenTelemetry with message contents excluded. The API exposes Prometheus request metrics. The catalog queries Prometheus for scraped API metrics and attempts to retrieve a completed agent trace from Jaeger. Other service probes remain health checks; they do not prove the complete monitoring pipeline. The local API HPA uses existing CPU metrics, and the catalog reads its ScalingActive condition. Load-driven scaling, log ingestion, curated dashboards/alerts, and warehouse CDC still need implementation or end-to-end validation. ClickHouse readiness is reported separately from CDC readiness.
+Application traces use OpenTelemetry with message contents excluded. The API exposes Prometheus request metrics. The catalog queries Prometheus for scraped API metrics and attempts to retrieve a completed agent trace from Jaeger. Other service probes remain health checks; they do not prove the complete monitoring pipeline. The local API HPA uses existing CPU metrics, and the catalog reads its ScalingActive condition. Load-driven scaling, log ingestion, curated dashboards/alerts, still need end-to-end validation. Warehouse freshness is reported from the latest validated batch export.
 
 The base uses ordinary Kubernetes resources for telemetry, dashboards, logs, and warehousing, avoiding extra operators. Kueue, KEDA, PeerDB, and additional service operators remain options for later consideration. Reuse an existing Metrics Server; do not install a duplicate.
 
@@ -97,7 +98,7 @@ All commands live in `bin/`. Installs use frozen lockfiles; dependency changes r
 
 The separate Docker Postgres is for native development and disposable integration databases; it does not require Kubernetes and is independent of local CloudNativePG. Native `server-dev`, `mcp-dev`, and `web-dev` commands remain available, but the full task demo requires the platform services and dispatcher.
 
-Integration tests cover migrations, persistence, API/MCP authentication, owner isolation, concurrent run claims, cancellation, conversations, and object-storage failure behavior. The local walkthrough adds real SeaweedFS, Valkey, and Argo execution. EKS deployment, real model calls, backup/restore, and full telemetry/CDC are not yet validated.
+Integration tests cover migrations, persistence, API/MCP authentication, owner isolation, concurrent run claims, cancellation, conversations, and object-storage failure behavior. The local walkthrough adds real SeaweedFS, Valkey, and Argo execution. EKS deployment, real model calls, backup/restore, and the remaining telemetry integrations are not yet validated.
 
 ## Vendored components and delivery
 
@@ -105,4 +106,10 @@ The [vendor inventory](k8s/base/vendor/README.md) records pinned inputs, checksu
 
 GitHub Actions live in the repository's `.github/workflows/`. Their current checked-in validation/delivery stages should be reviewed before enabling remote deployment; complete preview lifecycle and production promotion are still work ahead. EKS infrastructure commands live in [../bin/](../bin/README.md), use the local AWS CLI, and keep AWS-specific provisioning outside application functionality.
 
-Before remote deployment, configure OIDC, immutable image references, storage and backup destinations, certificate/DNS integration, resource sizing, and deployment identity. Prove the full local workflow first, then repeat it on EKS and validate the remaining telemetry, CDC, recovery, and scaling paths.
+Before remote deployment, configure OIDC, immutable image references, storage and backup destinations, certificate/DNS integration, resource sizing, and deployment identity. Prove the full local workflow first, then repeat it on EKS and validate the remaining telemetry, recovery, and scaling paths.
+
+## Identity and warehouse demo
+
+Local sign-in uses Keycloak authorization code with PKCE. Developer accounts can create projects/tasks and exports; viewers have read-only access. bin/local-token [--viewer] [--mcp] obtains a short-lived Keycloak access token for CLI checks. It requires local-forward and reads only the generated demo credentials from the cluster. Native development outside Kubernetes still supports bin/dev-token.
+
+In System, choose **Export now**. The same metadata snapshot worker runs nightly at **02:00 UTC** through Argo. Export history shows state, workflow, manifest key, freshness, and ClickHouse row counts. bin/local-export checks submission idempotency, manifest/count agreement, and viewer denial. bin/local-nightly invokes the scheduled entrypoint immediately; bin/local-identity-check verifies API/MCP audiences and shows completed nightly export evidence. See [exports](server/app/exports/README.md) and [Keycloak](k8s/base/cluster/keycloak/README.md).

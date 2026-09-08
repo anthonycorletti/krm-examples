@@ -39,5 +39,7 @@ spec:
       namespaces:
         from: Selector
         selector:
-          matchLabels:
-            kubernetes.io/metadata.name: platform-apps
+          matchExpressions:
+          - key: kubernetes.io/metadata.name
+            operator: In
+            values: [platform-apps, platform-cluster]

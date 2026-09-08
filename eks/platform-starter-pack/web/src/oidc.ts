@@ -19,7 +19,7 @@ async function oidc() {
     client_id: config.client_id,
     redirect_uri: `${location.origin}/auth/callback`,
     response_type: "code",
-    scope: "openid profile platform:read platform:verify",
+    scope: "openid platform:read platform:verify",
     automaticSilentRenew: false,
     loadUserInfo: false,
     userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }),

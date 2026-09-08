@@ -33,7 +33,12 @@ Run these scripts from any directory. They resolve the example root themselves. 
 | local-components | Read authenticated live component status and evidence from the local API |
 | local-status | Show Colima platform pods, services, volumes, and workflows |
 | local-forward | Forward Envoy HTTPS to the fixed web/API/MCP localhost ports |
-| local-token | Issue an API token using the local cluster signing secret |
+| local-token [--viewer] [--mcp] | Obtain a Keycloak token with the appropriate role and audience |
+| local-credentials | Show generated local developer/viewer login credentials |
+| local-identity-check | Verify real API/MCP OIDC tokens and audience isolation; show nightly export evidence |
+| local-identity-sync | Reconcile local Keycloak client configuration and token mappers without replacing users |
+| local-nightly | Invoke the nightly scheduler now; it queues one export per owner |
+| local-export | Exercise a real snapshot export, warehouse counts, idempotency, and viewer denial |
 | local-stop | Stop app/data workloads and hibernate Postgres, retaining volumes and controllers |
 
 Cluster creation/deletion lives in [../../bin/](../../bin/README.md). Local postgres-start remains a Docker command with no Kubernetes dependency. EKS is the first platform deployment-test target.

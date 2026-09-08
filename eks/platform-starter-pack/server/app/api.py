@@ -10,6 +10,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from app import __version__
 from app.auth.service import AuthService
 from app.components.service import ComponentsService
+from app.exports.service import ExportsService
 from app.kit.db.postgres import create_db_engine
 from app.kit.errors import Forbidden, Unauthorized
 from app.kit.metrics import LATENCY, REQUESTS
@@ -37,6 +38,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.settings, app.state.engine, app.state.auth = settings, engine, auth
         app.state.components = ComponentsService(engine, auth)
         app.state.verification = VerificationService(engine, auth)
+        app.state.exports = ExportsService(engine, auth)
         app.state.projects = ProjectsService(engine, auth)
         app.state.tasks = TasksService(engine, auth, Objects(settings))
         try:

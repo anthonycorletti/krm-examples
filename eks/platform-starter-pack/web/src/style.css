@@ -512,11 +512,26 @@ time {
 }
 .system-table > div {
   display: grid;
-  grid-template-columns: 180px 1fr 110px;
+  grid-template-columns: 180px minmax(0, 1fr) 110px;
   gap: 20px;
   padding: 16px 0;
   align-items: center;
   border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.system-table > div > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.snapshot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin: 16px 0;
+}
+.snapshot-actions p {
+  color: var(--muted-foreground);
   font-size: 12px;
 }
 .system-table strong {
@@ -635,7 +650,7 @@ time {
     gap: 10px;
   }
   .system-table > div {
-    grid-template-columns: 1fr 100px;
+    grid-template-columns: minmax(0, 1fr) 100px;
   }
   .system-table > div > span:not(.status) {
     grid-column: 1 / -1;

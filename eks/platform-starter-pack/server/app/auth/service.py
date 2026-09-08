@@ -1,4 +1,5 @@
 import asyncio
+import ssl
 import time
 
 import httpx
@@ -12,6 +13,7 @@ from app.settings import Settings
 class AuthService:
     def __init__(self, settings: Settings):
         self.settings = settings
+        self.oidc_verified = False
         self._keys: dict[str, jwt.PyJWK] = {}
         self._refreshed = float("-inf")
         self._lock = asyncio.Lock()
@@ -26,7 +28,12 @@ class AuthService:
             if age > 300 or (kid not in self._keys and age > 30):
                 # Unknown key IDs cannot trigger more than one fetch every 30 seconds.
                 self._refreshed = time.monotonic()
-                async with httpx.AsyncClient(timeout=5, follow_redirects=False) as client:
+                context = ssl.create_default_context(cafile=self.settings.oidc_ca_file or None)
+                if self.settings.env == "local" and self.settings.oidc_ca_file:
+                    context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+                async with httpx.AsyncClient(
+                    timeout=5, follow_redirects=False, verify=context
+                ) as client:
                     response = await client.get(self.settings.oidc_jwks_url)
                     response.raise_for_status()
                     payload = response.json()
@@ -62,6 +69,7 @@ class AuthService:
             )
             if not isinstance(claims["scope"], str):
                 raise ValueError("Invalid scope")
+            self.oidc_verified = bool(self.settings.oidc_jwks_url)
             return Principal(
                 subject=claims["sub"],
                 environment=claims["environment"],

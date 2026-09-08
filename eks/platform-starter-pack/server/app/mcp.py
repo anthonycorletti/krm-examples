@@ -6,6 +6,7 @@ from fastmcp.server.dependencies import get_access_token
 
 from app.auth.service import AuthService
 from app.components.service import ComponentsService
+from app.exports.service import ExportsService
 from app.kit.db.postgres import create_db_engine
 from app.kit.errors import Unauthorized
 from app.kit.objects import Objects
@@ -34,6 +35,7 @@ def create_mcp(settings: Settings | None = None):
     auth = AuthService(settings)
     engine = create_db_engine(settings)
     components = ComponentsService(engine, auth)
+    exports = ExportsService(engine, auth)
     verification = VerificationService(engine, auth)
     tasks = TasksService(engine, auth, Objects(settings))
 
@@ -69,6 +71,18 @@ def create_mcp(settings: Settings | None = None):
     @server.tool()
     async def read_migrations(environment: str = "local"):
         return await verification.migrations(await principal(), environment)
+
+    @server.tool()
+    async def list_exports():
+        return await exports.list_exports(await principal())
+
+    @server.tool()
+    async def export_now(request_key: str):
+        return await exports.create_export(await principal(), request_key)
+
+    @server.tool()
+    async def read_warehouse():
+        return await exports.warehouse(await principal())
 
     @server.tool()
     async def list_projects():

@@ -159,6 +159,76 @@ export type Event = {
 };
 
 /**
+ * Export
+ */
+export type Export = {
+    /**
+     * Created At
+     */
+    created_at?: string;
+    /**
+     * Deleted At
+     */
+    deleted_at?: string | null;
+    /**
+     * Environment
+     */
+    environment: string;
+    /**
+     * Error
+     */
+    error?: string | null;
+    /**
+     * Id
+     */
+    id?: string;
+    /**
+     * Manifest Key
+     */
+    manifest_key?: string | null;
+    /**
+     * Owner
+     */
+    owner: string;
+    /**
+     * Request Key
+     */
+    request_key: string;
+    /**
+     * Row Counts
+     */
+    row_counts?: {
+        [key: string]: number;
+    };
+    /**
+     * Status
+     */
+    status?: string;
+    /**
+     * Trigger
+     */
+    trigger?: string;
+    /**
+     * Updated At
+     */
+    updated_at?: string;
+    /**
+     * Workflow Name
+     */
+    workflow_name?: string | null;
+};
+
+/**
+ * ExportCreate
+ */
+export type ExportCreate = {
+    /**
+     * Request Key
+     */
+    request_key: string;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -515,6 +585,19 @@ export type VerificationRead = {
     subject: string;
 };
 
+/**
+ * WarehouseRead
+ */
+export type WarehouseRead = {
+    /**
+     * Counts
+     */
+    counts: {
+        [key: string]: number;
+    };
+    export: Export | null;
+};
+
 export type ListAgentsData = {
     body?: never;
     path?: never;
@@ -596,6 +679,99 @@ export type ListComponentsResponses = {
 };
 
 export type ListComponentsResponse = ListComponentsResponses[keyof ListComponentsResponses];
+
+export type ListExportsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/exports';
+};
+
+export type ListExportsResponses = {
+    /**
+     * Response List Exports
+     *
+     * Successful Response
+     */
+    200: Array<Export>;
+};
+
+export type ListExportsResponse = ListExportsResponses[keyof ListExportsResponses];
+
+export type CreateExportData = {
+    body: ExportCreate;
+    path?: never;
+    query?: never;
+    url: '/api/exports';
+};
+
+export type CreateExportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateExportError = CreateExportErrors[keyof CreateExportErrors];
+
+export type CreateExportResponses = {
+    /**
+     * Successful Response
+     */
+    202: Export;
+};
+
+export type CreateExportResponse = CreateExportResponses[keyof CreateExportResponses];
+
+export type ReadWarehouseData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/exports/warehouse';
+};
+
+export type ReadWarehouseResponses = {
+    /**
+     * Successful Response
+     */
+    200: WarehouseRead;
+};
+
+export type ReadWarehouseResponse = ReadWarehouseResponses[keyof ReadWarehouseResponses];
+
+export type ReadExportManifestData = {
+    body?: never;
+    path: {
+        /**
+         * Export Id
+         */
+        export_id: string;
+    };
+    query?: never;
+    url: '/api/exports/{export_id}/manifest';
+};
+
+export type ReadExportManifestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReadExportManifestError = ReadExportManifestErrors[keyof ReadExportManifestErrors];
+
+export type ReadExportManifestResponses = {
+    /**
+     * Response Read Export Manifest
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ReadExportManifestResponse = ReadExportManifestResponses[keyof ReadExportManifestResponses];
 
 export type ReadMigrationsData = {
     body?: never;

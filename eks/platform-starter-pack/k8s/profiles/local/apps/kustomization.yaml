@@ -11,17 +11,6 @@ images:
   newTag: local
 patches:
 - target:
-    kind: Deployment
-    name: platform-(api|mcp)
-  patch: "- op: add\n  path: /spec/template/spec/containers/0/envFrom/-\n  value:\n\
-    \    secretRef:\n      name: platform-auth\n"
-- target:
-    kind: ConfigMap
-    name: platform-settings
-  patch: "- op: replace\n  path: /data/APP_ENV\n  value: local\n- op: replace\n  path:\
-    \ /data/APP_ISSUER\n  value: platform-local\n- op: replace\n  path: /data/APP_OIDC_JWKS_URL\n\
-    \  value: \"\"\n"
-- target:
     kind: HTTPRoute
     name: platform-web
   patch: "- op: replace\n  path: /spec/hostnames\n  value: [web.localhost]\n"
@@ -37,3 +26,21 @@ patches:
     kind: ConfigMap
     name: platform-settings
   patch: "- op: replace\n  path: /data/APP_WORKER_IMAGE\n  value: platform-starter-server:local\n"
+- target:
+    kind: ConfigMap
+    name: platform-settings
+  patch: "- op: add\n  path: /data/APP_ISSUER\n  value: https://auth.localhost:5173/realms/platform\n\
+    - op: add\n  path: /data/APP_OIDC_JWKS_URL\n  value: https://keycloak.platform-cluster.svc.cluster.local:8443/realms/platform/protocol/openid-connect/certs\n\
+    - op: add\n  path: /data/APP_OIDC_CLIENT_ID\n  value: platform-web\n- op: add\n\
+    \  path: /data/APP_OIDC_CA_FILE\n  value: /run/oidc/ca.crt\n- op: add\n  path:\
+    \ /data/APP_OIDC_ORIGIN\n  value: https://auth.localhost:5173"
+- target:
+    kind: Deployment
+    name: platform-(api|mcp)
+  patch: "- op: add\n  path: /spec/template/spec/containers/0/volumeMounts/-\n  value:\
+    \ {name: oidc-ca, mountPath: /run/oidc, readOnly: true}\n- op: add\n  path: /spec/template/spec/volumes/-\n\
+    \  value: {name: oidc-ca, secret: {secretName: platform-oidc-ca}}"
+- target:
+    kind: ConfigMap
+    name: platform-settings
+  patch: "- op: add\n  path: /data/APP_ENV\n  value: local\n"
