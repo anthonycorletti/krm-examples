@@ -1,12 +1,14 @@
 # Kubernetes platform starter pack
 
-An experimentation workspace for giving agents tasks, following up with instructions, and inspecting the platform that executes them. The application runs on portable Kubernetes resources; an existing Colima Kubernetes cluster runs the full local stack. No kind.
+An experimentation workspace for giving agents tasks, following up with instructions, and inspecting the platform that executes them. The application runs on portable Kubernetes resources; an existing local K3s cluster runs the full local stack. No kind.
 
-**Current demo:** projects, tasks, conversations, reports, cancellation, and soft deletion are implemented. A live Colima walkthrough has completed a task and a follow-up through Argo, persisted metadata in Postgres and conversation/report objects in SeaweedFS, observed Valkey progress, and recorded trace IDs. The default inspector uses Pydantic AI's deterministic TestModel with real platform probes, clearly labeled in the UI. It does not call a language model.
+**Current demo:** projects, tasks, conversations, reports, cancellation, and soft deletion are implemented. A walkthrough on the local K3s cluster has completed a task and a follow-up through Argo, persisted metadata in Postgres and conversation/report objects in SeaweedFS, observed Valkey progress, and recorded trace IDs. The default inspector uses Pydantic AI's deterministic TestModel with real platform probes, clearly labeled in the UI. It does not call a language model.
 
 ## Run locally
 
-Use the existing default Colima profile with Kubernetes enabled and the Docker runtime. Install Docker, kubectl, Bun, and uv. Local commands currently use Bun and uv as well as Docker and kubectl; a Docker-and-kubectl-only bootstrap is not yet complete. The checked-in tool versions and frozen lockfiles live under server/ and web/.
+Use an existing local K3s cluster. Colima is the VM host used for the demonstrated setup, not a platform dependency. The included convenience scripts target that setup; see [local K3s setup](k8s/profiles/local/README.md#local-k3s-setup).
+
+Install Docker, kubectl, Bun, and uv. Local commands currently use Bun and uv as well as Docker and kubectl; a Docker-and-kubectl-only bootstrap is not yet complete. The checked-in tool versions and frozen lockfiles live under server/ and web/.
 
 ```sh
 ./bin/install
@@ -51,7 +53,7 @@ k8s/
     cluster/                 Platform services and controller configuration
     vendor/                  Pinned upstream manifests and image inventory
   profiles/
-    local/                   Existing Colima Kubernetes
+    local/                   Existing local K3s cluster
     test/
     preview/
     production/
@@ -81,7 +83,7 @@ Application traces use OpenTelemetry with message contents excluded. The API exp
 
 The base uses ordinary Kubernetes resources for telemetry, dashboards, logs, and warehousing, avoiding extra operators. Kueue, KEDA, PeerDB, and additional service operators remain options for later consideration. Reuse an existing Metrics Server; do not install a duplicate.
 
-Kubernetes Secrets supply runtime credentials. Encryption at rest is a cluster prerequisite, not a property of Secret YAML. The local bootstrap does not configure Colima's control-plane encryption. Local single-node data services and internal OpenSearch without its security plugin are development settings, not production defaults to adopt without review.
+Kubernetes Secrets supply runtime credentials. Encryption at rest is a cluster prerequisite, not a property of Secret YAML. Use bin/local-secrets-enable to enable K3s control-plane encryption and reencrypt existing Secrets; bin/local-secrets-check refreshes the evidence shown in System. Local single-node data services and internal OpenSearch without its security plugin are development settings, not production defaults to adopt without review.
 
 ## Development and validation
 

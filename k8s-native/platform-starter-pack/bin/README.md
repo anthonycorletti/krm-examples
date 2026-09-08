@@ -27,13 +27,13 @@ Run these scripts from any directory. They resolve the example root themselves. 
 | server-build / web-build | Build server container / static web assets |
 | vendor-fetch / vendor-check | Restore the minimal pinned vendor set / verify their checksums |
 | krm-check | Verify vendor checksums and render vendor, Postgres, Argo controller, and agent workflow resources offline |
-| local-secrets-enable | Enable K3s Secret encryption on single-node Colima, restart the control plane, and reencrypt existing Secrets |
+| local-secrets-enable | Enable K3s Secret encryption on the single-node local K3s cluster, restart the control plane, and reencrypt existing Secrets |
 | local-secrets-check | Refresh the timestamped control-plane encryption evidence shown in System |
-| local-check | Verify vendor checksums and render all Colima compositions |
+| local-check | Verify vendor checksums and render all local K3s compositions |
 | local-up | Build images in Colima and start the full local Kubernetes service set |
 | local-experiment | Create a project, execute a task and follow-up through Argo, and verify object/report/cache evidence |
 | local-components | Read authenticated live component status and evidence from the local API |
-| local-status | Show Colima platform pods, services, volumes, and workflows |
+| local-status | Show local K3s platform pods, services, volumes, and workflows |
 | local-forward | Forward Envoy HTTPS to the fixed web/API/MCP localhost ports |
 | local-token [--viewer] [--mcp] | Obtain a Keycloak token with the appropriate role and audience |
 | local-credentials | Show generated local developer/viewer login credentials |
@@ -44,7 +44,7 @@ Run these scripts from any directory. They resolve the example root themselves. 
 | local-cleanup [--delete-data] [--apply] | Preview cleanup; --apply stops workloads, or --delete-data --apply fully uninstalls project resources, controllers, CRDs, and data after dependency checks |
 | local-stop | Stop app/data workloads and hibernate Postgres, retaining volumes and controllers |
 
-Cluster provisioning is outside the starter pack. Use an existing cluster; bin/local-* targets Colima. Local postgres-start remains a Docker command with no Kubernetes dependency.
+Cluster provisioning is outside the starter pack. The platform needs a local K3s cluster; Colima hosts the demonstrated environment. The convenience scripts target its `default` profile and `colima` Kubernetes context. See [local K3s setup](../k8s/profiles/local/README.md#local-k3s-setup). Native postgres-start remains a Docker command with no Kubernetes dependency.
 
 Normal installs never resolve new versions: uv sync --frozen and bun install --frozen-lockfile. Only explicit add commands change dependency metadata/lockfiles, retaining existing compatible resolutions. They do not use upgrade-all. Review lock diffs and run bin/integration-test after dependency changes; a failed check leaves the changes available for correction, not silently accepted. There are no generic lock regeneration commands.
 
