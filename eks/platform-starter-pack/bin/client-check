@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+./bin/generate-client
+git diff --exit-code -- web/openapi.json web/src/client

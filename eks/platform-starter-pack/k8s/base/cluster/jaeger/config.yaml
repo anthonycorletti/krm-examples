@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger
+data:
+  jaeger.yaml: "exporters:\n  jaeger_storage_exporter:\n    trace_storage: primary\n\
+    extensions:\n  jaeger_query:\n    storage:\n      traces: primary\n  jaeger_storage:\n\
+    \    backends:\n      primary:\n        opensearch:\n          indices:\n    \
+    \        index_prefix: jaeger\n            services:\n              replicas:\
+    \ 0\n              shards: 1\n            spans:\n              replicas: 0\n\
+    \              shards: 1\n          server_urls:\n          - http://opensearch:9200\n\
+    processors:\n  batch: {}\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n \
+    \       endpoint: 0.0.0.0:4317\n      http:\n        endpoint: 0.0.0.0:4318\n\
+    service:\n  extensions:\n  - jaeger_storage\n  - jaeger_query\n  pipelines:\n\
+    \    traces:\n      exporters:\n      - jaeger_storage_exporter\n      processors:\n\
+    \      - batch\n      receivers:\n      - otlp\n"

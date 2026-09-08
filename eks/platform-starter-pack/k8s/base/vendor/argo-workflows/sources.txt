@@ -1,0 +1,2 @@
+upstream.yaml adac8370b9c0470acd3a71cf4139d40d7b8e995a774c1a639864b3db0e601a83 https://github.com/argoproj/argo-workflows/releases/download/v4.1.2/install.yaml
+LICENSE c996fc213c94f4a4a838407d355b081226caa7b103a4f239bb87fb8f1d8e3a60 https://raw.githubusercontent.com/argoproj/argo-workflows/v4.1.2/LICENSE

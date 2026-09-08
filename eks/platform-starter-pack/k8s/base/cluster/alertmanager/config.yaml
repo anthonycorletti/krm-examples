@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager
+data:
+  alertmanager.yaml: "receivers:\n- name: local\nroute:\n  group_by:\n  - alertname\n\
+    \  receiver: local\n"

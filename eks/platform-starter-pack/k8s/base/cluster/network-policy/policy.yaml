@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: platform-services
+  namespace: platform-cluster
+spec:
+  podSelector:
+    matchExpressions:
+    - key: app
+      operator: In
+      values:
+      - valkey
+      - seaweedfs
+      - prometheus
+      - alertmanager
+      - opensearch
+      - jaeger
+      - perses
+      - otel-collector
+      - clickhouse
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: platform-cluster
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: platform-apps
+      podSelector:
+        matchLabels:
+          app: platform-api
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: platform-apps
+      podSelector:
+        matchLabels:
+          app: platform-mcp
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: platform-apps
+      podSelector:
+        matchLabels:
+          app: platform-worker

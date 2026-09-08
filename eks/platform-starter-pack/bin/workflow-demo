@@ -1,0 +1,38 @@
+#!/bin/sh
+set -eu
+if [ "$#" -ne 2 ]; then
+  echo 'Usage: bin/workflow-demo CONTEXT SERVER_IMAGE@sha256:DIGEST' >&2
+  exit 2
+fi
+demo_context=$1
+demo_image=$2
+case "$demo_image" in *@sha256:*) ;; *) echo 'Use a digest-pinned server image.' >&2; exit 2 ;; esac
+demo_digest=${demo_image##*@sha256:}
+case "$demo_digest" in *[!a-f0-9]*) echo 'Invalid SHA-256 digest.' >&2; exit 2 ;; esac
+[ "${#demo_digest}" -eq 64 ] || { echo 'Expected a 64-character SHA-256 digest.' >&2; exit 2; }
+case "$demo_image" in *[!a-zA-Z0-9./_:@-]*) echo 'Invalid image reference.' >&2; exit 2 ;; esac
+demo_name=$(kubectl --context "$demo_context" -n platform-apps create -f - -o jsonpath='{.metadata.name}' <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: platform-inspect-
+spec:
+  workflowTemplateRef:
+    name: platform-inspect
+  arguments:
+    parameters:
+    - name: server-image
+      value: "$demo_image"
+EOF
+)
+echo "Submitted $demo_name in $demo_context/platform-apps"
+demo_attempt=0
+while [ "$demo_attempt" -lt 165 ]; do
+  demo_phase=$(kubectl --context "$demo_context" -n platform-apps get workflow "$demo_name" -o jsonpath='{.status.phase}')
+  case "$demo_phase" in Succeeded|Failed|Error) break ;; esac
+  demo_attempt=$((demo_attempt + 1))
+  sleep 2
+done
+kubectl --context "$demo_context" -n platform-apps get workflow "$demo_name"
+kubectl --context "$demo_context" -n platform-apps logs -l "workflows.argoproj.io/workflow=$demo_name" -c main --prefix --tail=-1
+[ "$demo_phase" = Succeeded ] || { echo "Workflow did not succeed: $demo_phase" >&2; exit 1; }

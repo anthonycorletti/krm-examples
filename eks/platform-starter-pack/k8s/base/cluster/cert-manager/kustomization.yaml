@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../vendor/cert-manager
+namespace: platform-cluster
+patches:
+- target:
+    kind: Namespace
+    name: cert-manager
+  patch: "$patch: delete\napiVersion: v1\nkind: Namespace\nmetadata:\n  name: cert-manager\n"
+- target:
+    kind: Deployment
+    name: cert-manager
+  patch: "- op: replace\n  path: /spec/template/spec/containers/0/args/2\n  value:\
+    \ --leader-election-namespace=platform-cluster\n"
+- target:
+    kind: Deployment
+    name: cert-manager-cainjector
+  patch: "- op: replace\n  path: /spec/template/spec/containers/0/args/1\n  value:\
+    \ --leader-election-namespace=platform-cluster\n"
+- target:
+    kind: Deployment
+    name: cert-manager
+  patch: "- op: add\n  path: /spec/template/spec/containers/0/args/-\n  value: --enable-gateway-api=true\n"
+- target:
+    kind: MutatingWebhookConfiguration
+    name: cert-manager-webhook
+  patch: "- op: replace\n  path: /metadata/annotations/cert-manager.io~1inject-ca-from-secret\n\
+    \  value: platform-cluster/cert-manager-webhook-ca\n"
+- target:
+    kind: ValidatingWebhookConfiguration
+    name: cert-manager-webhook
+  patch: "- op: replace\n  path: /metadata/annotations/cert-manager.io~1inject-ca-from-secret\n\
+    \  value: platform-cluster/cert-manager-webhook-ca\n"

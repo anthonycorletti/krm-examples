@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: platform-tls
+spec:
+  secretName: platform-tls
+  issuerRef:
+    name: platform-acme
+    kind: ClusterIssuer
+  dnsNames:
+  - web.example.invalid
+  - api.example.invalid
+  - mcp.example.invalid

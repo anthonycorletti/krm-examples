@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: clickhouse
+        image: clickhouse/clickhouse-server:26.3.32.14@sha256:456063a689194186633bb3db0862283068f4c2ee538852d3aaffa7eb66f1f841
+        ports:
+        - name: http
+          containerPort: 8123
+        - name: native
+          containerPort: 9000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: data
+          mountPath: /var/lib/clickhouse
+        env:
+        - name: CLICKHOUSE_DB
+          value: platform
+        - name: CLICKHOUSE_USER
+          value: platform
+        - name: CLICKHOUSE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: platform-services
+              key: clickhouse-password
+        - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
+          value: '1'
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8123
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: tmp
+        emptyDir: {}
+  serviceName: clickhouse
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 20Gi
+      storageClassName: platform-storage

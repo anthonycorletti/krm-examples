@@ -1,0 +1,10 @@
+groups:
+- name: platform
+  rules:
+  - alert: PlatformTargetDown
+    annotations:
+      summary: A platform scrape target is unavailable
+    expr: up == 0
+    for: 2m
+    labels:
+      severity: warning

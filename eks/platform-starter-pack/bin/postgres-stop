@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+name=platform-starter-dev-postgres
+owner=$(docker inspect --format '{{index .Config.Labels "platform-starter-pack"}}' "$name")
+[ "$owner" = true ] || { echo "Container name belongs to another project" >&2; exit 1; }
+docker stop "$name"

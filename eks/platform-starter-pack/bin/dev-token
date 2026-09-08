@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../server"
+uv run --frozen python - "$@" <<'PY'
+import sys
+import time
+import jwt
+from app.settings import Settings
+settings = Settings()
+secret = settings.token_secret.get_secret_value()
+if len(secret) < 32:
+    raise SystemExit("Set APP_TOKEN_SECRET to at least 32 random characters first")
+audience = settings.mcp_audience if "--mcp" in sys.argv else settings.api_audience
+scope = "platform:read" if "--viewer" in sys.argv else "platform:read platform:verify"
+now = int(time.time())
+print(jwt.encode({"sub": "local-developer", "iss": settings.issuer, "aud": audience,
+                  "iat": now, "exp": now + 3600, "environment": settings.env,
+                  "scope": scope}, secret, algorithm="HS256"))
+PY

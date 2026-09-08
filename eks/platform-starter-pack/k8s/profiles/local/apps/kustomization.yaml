@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../../base/apps
+images:
+- name: platform-server
+  newName: platform-starter-server
+  newTag: local
+- name: platform-web
+  newName: platform-starter-web
+  newTag: local
+patches:
+- target:
+    kind: Deployment
+    name: platform-(api|mcp)
+  patch: "- op: add\n  path: /spec/template/spec/containers/0/envFrom/-\n  value:\n\
+    \    secretRef:\n      name: platform-auth\n"
+- target:
+    kind: ConfigMap
+    name: platform-settings
+  patch: "- op: replace\n  path: /data/APP_ENV\n  value: local\n- op: replace\n  path:\
+    \ /data/APP_ISSUER\n  value: platform-local\n- op: replace\n  path: /data/APP_OIDC_JWKS_URL\n\
+    \  value: \"\"\n"
+- target:
+    kind: HTTPRoute
+    name: platform-web
+  patch: "- op: replace\n  path: /spec/hostnames\n  value: [web.localhost]\n"
+- target:
+    kind: HTTPRoute
+    name: platform-api
+  patch: "- op: replace\n  path: /spec/hostnames\n  value: [api.localhost]\n"
+- target:
+    kind: HTTPRoute
+    name: platform-mcp
+  patch: "- op: replace\n  path: /spec/hostnames\n  value: [mcp.localhost]\n"
+- target:
+    kind: ConfigMap
+    name: platform-settings
+  patch: "- op: replace\n  path: /data/APP_WORKER_IMAGE\n  value: platform-starter-server:local\n"

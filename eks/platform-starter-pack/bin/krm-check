@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+./bin/vendor-check
+for component in k8s/base/vendor/*/kustomization.yaml; do
+  kubectl kustomize "${component%/kustomization.yaml}" >/dev/null
+done
+kubectl kustomize k8s/base/cluster/cloudnative-pg >/dev/null
+kubectl kustomize k8s/base/cluster/postgres >/dev/null
+kubectl kustomize k8s/base/cluster/argo-workflows >/dev/null
+kubectl kustomize k8s/base/apps/workflows >/dev/null
+echo 'Vendor, Postgres, Argo controller, and agent workflow resources render successfully; live EKS validation remains pending.'

@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: platform-inspect
+spec:
+  entrypoint: inspect
+  serviceAccountName: platform-workflow
+  activeDeadlineSeconds: 300
+  ttlStrategy:
+    secondsAfterCompletion: 86400
+  podMetadata:
+    labels:
+      app: platform-worker
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  arguments:
+    parameters:
+    - name: server-image
+  templates:
+  - name: inspect
+    retryStrategy:
+      limit: '1'
+      retryPolicy: OnError
+    container:
+      name: main
+      image: '{{workflow.parameters.server-image}}'
+      command:
+      - /srv/.venv/bin/python
+      - -m
+      - app.worker
+      envFrom:
+      - configMapRef:
+          name: platform-settings
+      env:
+      - name: APP_DATABASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: platform-postgres-app
+            key: fqdn-uri
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+          - ALL
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+      volumeMounts:
+      - name: postgres-ca
+        mountPath: /run/postgres
+        readOnly: true
+      - name: tmp
+        mountPath: /tmp
+  volumes:
+  - name: postgres-ca
+    secret:
+      secretName: platform-postgres-ca
+  - name: tmp
+    emptyDir: {}

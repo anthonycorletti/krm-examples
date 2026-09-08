@@ -1,0 +1,2 @@
+upstream.yaml f8bede43fe4ee0d478c2355b204a36876b2ae4faac60f2a9452280b293da3b88 https://github.com/cloudnative-pg/cloudnative-pg/releases/download/v1.30.0/cnpg-1.30.0.yaml
+LICENSE cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30 https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/4b5e244a7d031f67e025c83c1555e7726ecbbfa1/LICENSE

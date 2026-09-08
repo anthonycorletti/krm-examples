@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../server"
+uv run --frozen python - <<'PY'
+import os
+from pathlib import Path
+from secrets import token_urlsafe
+path = Path(".env")
+if path.exists():
+    print("Keeping existing server/.env")
+else:
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as file:
+        file.write("APP_ENV=local\nAPP_DATABASE_URL=postgresql+asyncpg://platform:platform@127.0.0.1:55432/platform\nAPP_TOKEN_SECRET=" + token_urlsafe(48) + "\n")
+    print("Created server/.env with a generated local signing key")
+PY

@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../server"
+exec uv run --frozen python ../bin/lib/local.py workflow "$@"

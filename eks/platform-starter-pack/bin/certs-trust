@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+./bin/certs
+case "$(uname -s)" in
+  Darwin)
+    security add-trusted-cert -r trustRoot -k "$HOME/Library/Keychains/login.keychain-db" .local/tls/ca.crt
+    ;;
+  Linux)
+    echo 'Install .local/tls/ca.crt in your system/browser trust store.'
+    echo 'For Debian/Ubuntu: sudo install -m 0644 .local/tls/ca.crt /usr/local/share/ca-certificates/platform-starter-local.crt'
+    echo 'Then run: sudo update-ca-certificates'
+    exit 1
+    ;;
+  *) echo 'Import .local/tls/ca.crt as a trusted local certificate authority.'; exit 1 ;;
+esac

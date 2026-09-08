@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: platform-dispatcher
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: platform-dispatcher
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  verbs:
+  - create
+  - get
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-dispatcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: platform-dispatcher
+subjects:
+- kind: ServiceAccount
+  name: platform-dispatcher
+  namespace: platform-apps
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-dispatcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: platform-worker
+  template:
+    metadata:
+      labels:
+        app: platform-worker
+    spec:
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: dispatcher
+        image: platform-server
+        command:
+        - /srv/.venv/bin/python
+        - -m
+        - app.worker
+        - dispatch
+        envFrom:
+        - configMapRef:
+            name: platform-settings
+        - secretRef:
+            name: platform-storage
+        env:
+        - name: APP_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: platform-postgres-app
+              key: fqdn-uri
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: postgres-ca
+          mountPath: /run/postgres
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: postgres-ca
+        secret:
+          secretName: platform-postgres-ca
+      - name: tmp
+        emptyDir: {}
+      serviceAccountName: platform-dispatcher

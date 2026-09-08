@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../server"
+uv run --frozen ruff format --config pyproject.toml . ../bin/lib
+uv run --frozen ruff check --config pyproject.toml --fix . ../bin/lib

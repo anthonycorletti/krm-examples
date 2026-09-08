@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../../base/cluster/autoscaling
+- ../../../base/cluster/inspection
+- ../../../base/cluster/postgres
+- ../../../base/cluster/valkey
+- ../../../base/cluster/seaweedfs
+- ../../../base/cluster/argo-workflows
+- ../../../base/cluster/prometheus
+- ../../../base/cluster/alertmanager
+- ../../../base/cluster/jaeger
+- ../../../base/cluster/perses
+- ../../../base/cluster/opensearch
+- ../../../base/cluster/otel-collector
+- ../../../base/cluster/clickhouse
+- ../../../base/cluster/network-policy
+patches:
+- target:
+    kind: StatefulSet
+    name: opensearch
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: 1Gi
+- target:
+    kind: StatefulSet
+    name: clickhouse
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: 512Mi
+- target:
+    kind: Cluster
+    name: platform-postgres
+  patch: "- op: replace\n  path: /spec/instances\n  value: 1\n"
+- target:
+    kind: StatefulSet
+  patch: "- op: replace\n  path: /spec/volumeClaimTemplates/0/spec/storageClassName\n\
+    \  value: local-path\n"

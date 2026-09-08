@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+./bin/vendor-check
+for section in apps services migrations workflows routing; do
+  kubectl kustomize "k8s/profiles/local/$section" >/dev/null
+done
+for controller in cloudnative-pg cert-manager envoy-gateway; do
+  kubectl kustomize "k8s/base/cluster/$controller" >/dev/null
+done
+echo 'Local resources render. Run bin/local-status for live container status.'

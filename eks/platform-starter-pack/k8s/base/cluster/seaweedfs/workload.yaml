@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: seaweedfs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seaweedfs
+  template:
+    metadata:
+      labels:
+        app: seaweedfs
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: seaweedfs
+        image: chrislusf/seaweedfs:4.45@sha256:fc9f76fa993ad69966ffeb2f65d0318fcae39c6f8e20cf68ef7b3a5cb97769e5
+        ports:
+        - name: s3
+          containerPort: 8333
+        - name: filer
+          containerPort: 8888
+        - name: master
+          containerPort: 9333
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: data
+          mountPath: /data
+        - name: credentials
+          mountPath: /run/credentials
+          readOnly: true
+        args:
+        - server
+        - -dir=/data
+        - -ip=seaweedfs-0.seaweedfs.platform-cluster.svc.cluster.local
+        - -s3
+        - -s3.config=/run/credentials/s3.json
+        - -volume.max=8
+        - -master.volumeSizeLimitMB=1024
+        readinessProbe:
+          tcpSocket:
+            port: 8333
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: credentials
+        secret:
+          secretName: platform-services
+          items:
+          - key: s3.json
+            path: s3.json
+  serviceName: seaweedfs
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: platform-storage

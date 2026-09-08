@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+: "${AWS_REGION:?Set AWS_REGION}"
+
+aws eks delete-cluster \
+  --region "$AWS_REGION" \
+  --name "${1:-krm-examples}"

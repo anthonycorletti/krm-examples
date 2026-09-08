@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+probe() {
+  code=$(curl --silent --show-error --max-time 10 --cacert .local/tls/ca.crt \
+    --output /dev/null --write-out '%{http_code}' "$1")
+  [ "$code" = "$2" ] || { echo "$1 returned HTTP $code, expected $2" >&2; exit 1; }
+  echo "Verified TLS and HTTP $code: $1"
+}
+probe https://web.localhost:5173/ 200
+probe https://api.localhost:8000/livez 200
+probe https://api.localhost:8000/readyz 200
+probe https://mcp.localhost:8001/mcp 401
+probe https://web.localhost:5173/api/auth/me 401

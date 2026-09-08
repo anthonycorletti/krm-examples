@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../web"
+bunx --bun shadcn@4.21.0 "$@"
+# An explicit component change may add dependencies. Pin exactly what was installed.
+bun -e 'const p = await Bun.file("package.json").json(); for (const section of ["dependencies", "devDependencies"]) for (const [name, version] of Object.entries(p[section] ?? {})) { if (!/^\d+\.\d+\.\d+$/.test(version)) { const installed = await Bun.file(`node_modules/${name}/package.json`).json(); p[section][name] = installed.version; } } await Bun.write("package.json", JSON.stringify(p, null, 2) + "\n");'
+bun install --lockfile-only
+bun install --frozen-lockfile

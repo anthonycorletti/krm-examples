@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: platform-web
+  template:
+    metadata:
+      labels:
+        app: platform-web
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: web
+        image: platform-web
+        ports:
+        - name: http
+          containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: platform-settings
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+        readinessProbe:
+          httpGet:
+            path: /livez
+            port: http
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: http

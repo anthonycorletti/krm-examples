@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+: "${AWS_REGION:?Set AWS_REGION}"
+: "${EKS_CLUSTER_ROLE_ARN:?Set the EKS Auto Mode cluster IAM role ARN}"
+: "${EKS_NODE_ROLE_ARN:?Set the EKS Auto Mode node IAM role ARN}"
+: "${EKS_SUBNET_IDS:?Set comma-separated subnet IDs in at least two availability zones}"
+: "${EKS_API_CIDR:?Set the administrator IPv4 CIDR allowed to access the API}"
+
+aws eks create-cluster \
+  --region "$AWS_REGION" \
+  --name "${1:-krm-examples}" \
+  --kubernetes-version "${EKS_VERSION:-1.36}" \
+  --role-arn "$EKS_CLUSTER_ROLE_ARN" \
+  --resources-vpc-config "subnetIds=$EKS_SUBNET_IDS,endpointPublicAccess=true,endpointPrivateAccess=true,publicAccessCidrs=$EKS_API_CIDR" \
+  --compute-config "enabled=true,nodeRoleArn=$EKS_NODE_ROLE_ARN,nodePools=general-purpose,system" \
+  --kubernetes-network-config 'elasticLoadBalancing={enabled=true}' \
+  --storage-config 'blockStorage={enabled=true}' \
+  --access-config 'authenticationMode=API,bootstrapClusterCreatorAdminPermissions=true' \
+  --upgrade-policy 'supportType=STANDARD'

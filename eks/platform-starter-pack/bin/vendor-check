@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../k8s/base/vendor"
+for source in */sources.txt; do
+  component=${source%/sources.txt}
+  while read -r file digest url; do
+    actual=$(shasum -a 256 "$component/$file")
+    [ "${actual%% *}" = "$digest" ] || { echo "Checksum mismatch: $component/$file" >&2; exit 1; }
+  done < "$source"
+done
+echo 'Vendor checksums match.'

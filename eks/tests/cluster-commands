@@ -1,0 +1,46 @@
+#!/bin/sh
+set -eu
+
+eks_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+test_tmp=$(mktemp -d)
+trap 'rm -rf "$test_tmp"' EXIT HUP INT TERM
+export EKS_TEST_LOG="$test_tmp/calls"
+cat > "$test_tmp/aws" <<'SH'
+#!/bin/sh
+set -eu
+printf '%s\n' "$@" >> "$EKS_TEST_LOG"
+SH
+chmod +x "$test_tmp/aws"
+export PATH="$test_tmp:$PATH"
+export AWS_REGION=us-east-1
+export EKS_CLUSTER_ROLE_ARN=arn:aws:iam::123456789012:role/cluster
+export EKS_NODE_ROLE_ARN=arn:aws:iam::123456789012:role/node
+export EKS_SUBNET_IDS=subnet-one,subnet-two EKS_API_CIDR=203.0.113.10/32
+export EKS_VERSION=1.36
+
+"$eks_root/bin/create-cluster"
+grep -qx 'create-cluster' "$EKS_TEST_LOG"
+grep -qx 'krm-examples' "$EKS_TEST_LOG"
+grep -qx 'enabled=true,nodeRoleArn=arn:aws:iam::123456789012:role/node,nodePools=general-purpose,system' "$EKS_TEST_LOG"
+grep -qx 'subnetIds=subnet-one,subnet-two,endpointPublicAccess=true,endpointPrivateAccess=true,publicAccessCidrs=203.0.113.10/32' "$EKS_TEST_LOG"
+
+: > "$EKS_TEST_LOG"
+if EKS_SUBNET_IDS= "$eks_root/bin/create-cluster" >/dev/null 2>&1; then
+  echo 'FAIL: create accepted missing subnets' >&2; exit 1
+fi
+[ ! -s "$EKS_TEST_LOG" ]
+
+"$eks_root/bin/create-cluster" platform-test
+grep -qx 'platform-test' "$EKS_TEST_LOG"
+
+: > "$EKS_TEST_LOG"
+"$eks_root/bin/delete-cluster" platform-test
+grep -qx 'delete-cluster' "$EKS_TEST_LOG"
+grep -qx 'platform-test' "$EKS_TEST_LOG"
+
+: > "$EKS_TEST_LOG"
+"$eks_root/bin/cluster-status"
+grep -qx 'describe-cluster' "$EKS_TEST_LOG"
+grep -qx 'krm-examples' "$EKS_TEST_LOG"
+
+echo 'Cluster command checks passed with a fake local AWS CLI; no AWS calls were made.'

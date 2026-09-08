@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-settings
+data:
+  APP_ENV: production
+  APP_ISSUER: https://identity.invalid
+  APP_OIDC_JWKS_URL: https://identity.invalid/keys
+  APP_API_AUDIENCE: platform-api
+  APP_MCP_AUDIENCE: platform-mcp
+  APP_POSTGRES_CA_FILE: /run/postgres/ca.crt
+  APP_OBJECT_ENDPOINT: http://seaweedfs.platform-cluster.svc.cluster.local:8333
+  APP_OBJECT_BUCKET: platform
+  APP_OTEL_ENDPOINT: http://otel-collector.platform-cluster.svc.cluster.local:4318
+  APP_WORKER_IMAGE: platform-server:release

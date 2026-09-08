@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: perses
+data:
+  perses.yaml: "database:\n  file:\n    extension: json\n    folder: /perses\nsecurity:\n\
+    \  readonly: true\n"

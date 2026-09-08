@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../k8s/base/vendor"
+if [ "$#" -gt 1 ]; then echo 'Usage: bin/vendor-fetch [component]' >&2; exit 2; fi
+if [ "$#" -eq 1 ]; then
+  case "$1" in argo-workflows|cert-manager|cloudnative-pg|envoy-gateway|gateway-api) set -- "$1/sources.txt" ;; *) echo 'Unknown vendor component.' >&2; exit 2 ;; esac
+else
+  set -- */sources.txt
+fi
+vendor_tmp=$(mktemp -d)
+trap 'rm -rf "$vendor_tmp"' EXIT HUP INT TERM
+for source in "$@"; do
+  component=${source%/sources.txt}
+  mkdir -p "$vendor_tmp/$component"
+  while read -r file digest url; do
+    curl --fail --silent --show-error --location "$url" -o "$vendor_tmp/$component/$file"
+    actual=$(shasum -a 256 "$vendor_tmp/$component/$file")
+    [ "${actual%% *}" = "$digest" ] || { echo "Checksum mismatch: $component/$file" >&2; exit 1; }
+  done < "$source"
+done
+# Replace copies only after every requested download has verified successfully.
+for source in "$@"; do
+  component=${source%/sources.txt}
+  while read -r file digest url; do
+    cp "$vendor_tmp/$component/$file" "$component/$file"
+  done < "$source"
+done
+echo 'Vendor files restored from pinned sources.'

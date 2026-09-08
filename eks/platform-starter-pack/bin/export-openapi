@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../server"
+uv run --frozen python -c 'import json; from pathlib import Path; from app.api import create_app; Path("../web/openapi.json").write_text(json.dumps(create_app().openapi(), indent=2, sort_keys=True) + "\n")'

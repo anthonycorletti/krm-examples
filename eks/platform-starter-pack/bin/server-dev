@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+./bin/certs
+cd server
+exec uv run --frozen uvicorn app.api:app --host 127.0.0.1 --port 8000 --reload \
+  --ssl-keyfile ../.local/tls/localhost.key --ssl-certfile ../.local/tls/localhost.crt

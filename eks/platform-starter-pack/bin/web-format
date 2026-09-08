@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../web"
+bun run format
+bun run prettier --write ../bin/lib/web_check.ts

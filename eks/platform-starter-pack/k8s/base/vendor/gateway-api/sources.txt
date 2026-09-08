@@ -1,0 +1,2 @@
+upstream.yaml faede450fa178126aba41337737b97d351ebe87d93c910237ce1e072d1ca40d9 https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.2/standard-install.yaml
+LICENSE 20b6dde626f521dbb384f75e6d96c3d16789df3bf878b58bc2810614fb4db07c https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.6.2/LICENSE

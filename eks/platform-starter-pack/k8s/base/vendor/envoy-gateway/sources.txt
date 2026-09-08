@@ -1,0 +1,2 @@
+upstream.yaml 72b3971364f172eb0b9636c7142cc84ff695467bc065897958bde85a3c06cfd5 https://github.com/envoyproxy/gateway/releases/download/v1.9.1/install.yaml
+LICENSE c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4 https://raw.githubusercontent.com/envoyproxy/gateway/v1.9.1/LICENSE

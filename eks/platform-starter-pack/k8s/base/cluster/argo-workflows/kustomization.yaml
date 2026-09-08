@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: platform-cluster
+resources:
+- ../../vendor/argo-workflows
+patches:
+- target:
+    kind: Deployment
+    name: workflow-controller
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/args
+      value: [--managed-namespace, platform-apps]
+- target:
+    kind: Deployment
+    name: argo-server
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/args
+      value: [server, --auth-mode=client, --managed-namespace, platform-apps]

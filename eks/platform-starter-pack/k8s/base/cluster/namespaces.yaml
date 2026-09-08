@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-apps
+  labels:
+    app.kubernetes.io/part-of: platform-starter-pack
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-cluster
+  labels:
+    app.kubernetes.io/part-of: platform-starter-pack

@@ -1,0 +1,33 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: platform-inspection
+rules:
+- apiGroups: [gateway.networking.k8s.io]
+  resources: [gateways]
+  resourceNames: [platform]
+  verbs: [get]
+- apiGroups: [postgresql.cnpg.io]
+  resources: [clusters]
+  resourceNames: [platform-postgres]
+  verbs: [get]
+- apiGroups: [apps]
+  resources: [deployments]
+  resourceNames: [workflow-controller]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-inspection
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: platform-inspection
+subjects:
+- kind: ServiceAccount
+  name: platform-observer
+  namespace: platform-apps
+- kind: ServiceAccount
+  name: platform-workflow
+  namespace: platform-apps

@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+[ "$#" -eq 1 ] || { echo 'Usage: bin/migration-new "description"' >&2; exit 1; }
+cd "$(dirname "$0")/../server"
+uv run --frozen python - "$1" <<'PY'
+import sys
+import time
+from alembic import command
+from alembic.config import Config
+config = Config("alembic.ini")
+config.set_main_option("file_template", f"{time.time_ns() // 1_000_000}_%%(rev)s_%%(slug)s")
+command.revision(config, message=sys.argv[1], autogenerate=True)
+PY

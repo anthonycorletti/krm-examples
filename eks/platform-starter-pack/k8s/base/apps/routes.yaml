@@ -1,0 +1,66 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: platform-web
+spec:
+  parentRefs:
+  - name: platform
+    namespace: platform-cluster
+    sectionName: https
+  hostnames:
+  - web.example.invalid
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - name: platform-api
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: platform-web
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: platform-api
+spec:
+  parentRefs:
+  - name: platform
+    namespace: platform-cluster
+    sectionName: https
+  hostnames:
+  - api.example.invalid
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: platform-api
+      port: 8000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: platform-mcp
+spec:
+  parentRefs:
+  - name: platform
+    namespace: platform-cluster
+    sectionName: https
+  hostnames:
+  - mcp.example.invalid
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /mcp
+    backendRefs:
+    - name: platform-mcp
+      port: 8001

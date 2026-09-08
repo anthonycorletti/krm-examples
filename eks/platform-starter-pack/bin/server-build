@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+if [ "${1:-}" = --anonymous ]; then
+  # Isolate public-registry authentication without modifying the user's Docker config.
+  endpoint=$(docker context inspect --format '{{.Endpoints.docker.Host}}')
+  config=$(mktemp -d)
+  trap 'rmdir "$config" 2>/dev/null || true' EXIT
+  docker --config "$config" --host "$endpoint" build -t platform-starter-server:dev server
+else
+  docker build -t platform-starter-server:dev server
+fi

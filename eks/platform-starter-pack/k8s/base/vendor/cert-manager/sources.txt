@@ -1,0 +1,2 @@
+upstream.yaml 5f6a499b8c1857d57f560f536e0dcc830914b45c420899fe7ad0692c8624e408 https://github.com/cert-manager/cert-manager/releases/download/v1.21.1/cert-manager.yaml
+LICENSE c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4 https://raw.githubusercontent.com/cert-manager/cert-manager/v1.21.1/LICENSE

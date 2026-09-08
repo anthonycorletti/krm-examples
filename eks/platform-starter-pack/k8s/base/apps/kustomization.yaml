@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- config.yaml
+- api.yaml
+- api-service.yaml
+- mcp.yaml
+- mcp-service.yaml
+- web.yaml
+- web-service.yaml
+- routes.yaml
+- dispatcher.yaml
+- observer.yaml
+namespace: platform-apps

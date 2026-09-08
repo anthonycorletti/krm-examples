@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector
+data:
+  collector.yaml: "exporters:\n  opensearch:\n    dataset: platform\n    http:\n \
+    \     endpoint: http://opensearch:9200\n    logs_index: platform-logs\n  otlp/jaeger:\n\
+    \    endpoint: jaeger:4317\n    tls:\n      insecure: true\n  prometheus:\n  \
+    \  endpoint: 0.0.0.0:8889\nextensions:\n  health_check:\n    endpoint: 0.0.0.0:13133\n\
+    processors:\n  batch: {}\n  memory_limiter:\n    check_interval: 1s\n    limit_mib:\
+    \ 192\n    spike_limit_mib: 48\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n\
+    \        endpoint: 0.0.0.0:4317\n      http:\n        endpoint: 0.0.0.0:4318\n\
+    service:\n  extensions:\n  - health_check\n  pipelines:\n    logs:\n      exporters:\n\
+    \      - opensearch\n      processors:\n      - memory_limiter\n      - batch\n\
+    \      receivers:\n      - otlp\n    metrics:\n      exporters:\n      - prometheus\n\
+    \      processors:\n      - memory_limiter\n      - batch\n      receivers:\n\
+    \      - otlp\n    traces:\n      exporters:\n      - otlp/jaeger\n      processors:\n\
+    \      - memory_limiter\n      - batch\n      receivers:\n      - otlp\n"
